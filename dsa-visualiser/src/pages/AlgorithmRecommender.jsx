@@ -1,4 +1,20 @@
-import React, { useState, useMemo, useCallback } from 'react'
+import React, { useState, useMemo, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  ChevronRight, 
+  ChevronLeft, 
+  RotateCcw, 
+  CheckCircle, 
+  Code, 
+  Clock, 
+  Database,
+  Target,
+  Lightbulb,
+  BookOpen,
+  History,
+  Sparkles,
+  TrendingUp
+} from 'lucide-react';
 
 // ============================================================================
 // COMPREHENSIVE DECISION TREE DATABASE
@@ -10,11 +26,11 @@ const QUESTIONS = [
     step: 1,
     title: 'What type of data are you working with?',
     options: [
-      { value: 'array', label: 'Arrays / Lists / Numbers', icon: '📊' },
-      { value: 'string', label: 'Strings / Text', icon: '📝' },
-      { value: 'graph', label: 'Graphs / Networks', icon: '🕸️' },
-      { value: 'tree', label: 'Trees / Hierarchies', icon: '🌳' },
-      { value: 'collection', label: 'Collections / Sets', icon: '📦' }
+      { value: 'array', label: 'Arrays / Lists / Numbers', icon: '📊', color: 'from-blue-600 to-cyan-600' },
+      { value: 'string', label: 'Strings / Text', icon: '📝', color: 'from-green-600 to-emerald-600' },
+      { value: 'graph', label: 'Graphs / Networks', icon: '🕸️', color: 'from-purple-600 to-pink-600' },
+      { value: 'tree', label: 'Trees / Hierarchies', icon: '🌳', color: 'from-amber-600 to-orange-600' },
+      { value: 'collection', label: 'Collections / Sets', icon: '📦', color: 'from-indigo-600 to-violet-600' }
     ]
   },
   {
@@ -22,12 +38,12 @@ const QUESTIONS = [
     step: 2,
     title: 'What is your primary goal?',
     options: [
-      { value: 'search', label: 'Find / Search for element', icon: '🔍' },
-      { value: 'sort', label: 'Sort / Order data', icon: '⬆️' },
-      { value: 'path', label: 'Find path / connection', icon: '🛤️' },
-      { value: 'optimize', label: 'Optimize / Minimize cost', icon: '⚡' },
-      { value: 'validate', label: 'Validate / Check structure', icon: '✅' },
-      { value: 'transform', label: 'Transform / Process data', icon: '🔄' }
+      { value: 'search', label: 'Find / Search for element', icon: '🔍', color: 'from-blue-600 to-cyan-600' },
+      { value: 'sort', label: 'Sort / Order data', icon: '⬆️', color: 'from-green-600 to-teal-600' },
+      { value: 'path', label: 'Find path / connection', icon: '🛤️', color: 'from-purple-600 to-pink-600' },
+      { value: 'optimize', label: 'Optimize / Minimize cost', icon: '⚡', color: 'from-yellow-600 to-orange-600' },
+      { value: 'validate', label: 'Validate / Check structure', icon: '✅', color: 'from-emerald-600 to-green-600' },
+      { value: 'transform', label: 'Transform / Process data', icon: '🔄', color: 'from-indigo-600 to-blue-600' }
     ]
   },
   {
@@ -35,11 +51,11 @@ const QUESTIONS = [
     step: 3,
     title: 'What constraints matter most?',
     options: [
-      { value: 'time', label: 'Speed / Time complexity', icon: '⏱️' },
-      { value: 'space', label: 'Memory / Space efficiency', icon: '💾' },
-      { value: 'stability', label: 'Preserve order (stable)', icon: '🔒' },
-      { value: 'simplicity', label: 'Code simplicity', icon: '🎯' },
-      { value: 'balanced', label: 'Balanced performance', icon: '⚖️' }
+      { value: 'time', label: 'Speed / Time complexity', icon: '⏱️', color: 'from-red-600 to-pink-600' },
+      { value: 'space', label: 'Memory / Space efficiency', icon: '💾', color: 'from-blue-600 to-cyan-600' },
+      { value: 'stability', label: 'Preserve order (stable)', icon: '🔒', color: 'from-purple-600 to-indigo-600' },
+      { value: 'simplicity', label: 'Code simplicity', icon: '🎯', color: 'from-green-600 to-emerald-600' },
+      { value: 'balanced', label: 'Balanced performance', icon: '⚖️', color: 'from-amber-600 to-yellow-600' }
     ]
   },
   {
@@ -47,16 +63,15 @@ const QUESTIONS = [
     step: 4,
     title: 'How large is your dataset?',
     options: [
-      { value: 'small', label: 'Small (< 100)', icon: '🔬' },
-      { value: 'medium', label: 'Medium (100 - 10K)', icon: '📊' },
-      { value: 'large', label: 'Large (10K - 1M)', icon: '🏗️' },
-      { value: 'huge', label: 'Huge (1M+)', icon: '🌐' }
+      { value: 'small', label: 'Small (< 100)', icon: '🔬', color: 'from-cyan-600 to-blue-600' },
+      { value: 'medium', label: 'Medium (100 - 10K)', icon: '📊', color: 'from-blue-600 to-indigo-600' },
+      { value: 'large', label: 'Large (10K - 1M)', icon: '🏗️', color: 'from-purple-600 to-pink-600' },
+      { value: 'huge', label: 'Huge (1M+)', icon: '🌐', color: 'from-red-600 to-orange-600' }
     ]
   }
-]
+];
 
 const ALGORITHM_DATABASE = {
-  // Array/Sorting
   'array-sort-time-large': {
     name: 'Quick Sort',
     category: 'Sorting',
@@ -72,7 +87,8 @@ const ALGORITHM_DATABASE = {
   }
   return arr;
 }`,
-    learningResources: ['Visualizer: Race Day', 'Lab: What-If Performance']
+    learningResources: ['Visualizer: Race Day', 'Lab: What-If Performance'],
+    gradient: 'from-blue-600 to-cyan-600'
   },
   
   'array-sort-stability-medium': {
@@ -89,7 +105,8 @@ const ALGORITHM_DATABASE = {
   const right = mergeSort(arr.slice(mid));
   return merge(left, right);
 }`,
-    learningResources: ['Visualizer: Recurrence Tree', 'Museum: 1945 Merge Sort']
+    learningResources: ['Visualizer: Recurrence Tree', 'Museum: 1945 Merge Sort'],
+    gradient: 'from-emerald-600 to-green-600'
   },
   
   'array-sort-simplicity-small': {
@@ -110,7 +127,8 @@ const ALGORITHM_DATABASE = {
   }
   return arr;
 }`,
-    learningResources: ['Race Day', 'What-If Lab']
+    learningResources: ['Race Day', 'What-If Lab'],
+    gradient: 'from-amber-600 to-orange-600'
   },
   
   'array-search-time-large': {
@@ -130,10 +148,10 @@ const ALGORITHM_DATABASE = {
   }
   return -1;
 }`,
-    learningResources: ['Debug-the-Bug: Binary Search', 'Playground: Binary Search']
+    learningResources: ['Debug-the-Bug: Binary Search', 'Playground: Binary Search'],
+    gradient: 'from-cyan-600 to-blue-600'
   },
   
-  // Graph Algorithms
   'graph-path-time-medium': {
     name: 'Dijkstra\'s Algorithm',
     category: 'Graph',
@@ -158,7 +176,8 @@ const ALGORITHM_DATABASE = {
   }
   return dist;
 }`,
-    learningResources: ['Museum: 1956 Dijkstra', 'Drill Coach: Graph Questions']
+    learningResources: ['Museum: 1956 Dijkstra', 'Drill Coach: Graph Questions'],
+    gradient: 'from-purple-600 to-pink-600'
   },
   
   'graph-path-optimize-large': {
@@ -181,7 +200,8 @@ const ALGORITHM_DATABASE = {
   }
   return dist;
 }`,
-    learningResources: ['Museum: Dynamic Programming', 'Drill Coach']
+    learningResources: ['Museum: Dynamic Programming', 'Drill Coach'],
+    gradient: 'from-red-600 to-orange-600'
   },
   
   'graph-validate-time-medium': {
@@ -200,10 +220,10 @@ const ALGORITHM_DATABASE = {
   }
   return visited;
 }`,
-    learningResources: ['Drill Coach: Graph Complexity', 'Museum']
+    learningResources: ['Drill Coach: Graph Complexity', 'Museum'],
+    gradient: 'from-indigo-600 to-purple-600'
   },
   
-  // String Algorithms
   'string-search-time-large': {
     name: 'KMP (Knuth-Morris-Pratt)',
     category: 'String',
@@ -226,7 +246,8 @@ const ALGORITHM_DATABASE = {
   }
   return matches;
 }`,
-    learningResources: ['Museum: 1968 KMP', 'Drill Coach']
+    learningResources: ['Museum: 1968 KMP', 'Drill Coach'],
+    gradient: 'from-green-600 to-teal-600'
   },
   
   'string-transform-simplicity-small': {
@@ -245,10 +266,10 @@ const ALGORITHM_DATABASE = {
   }
   return true;
 }`,
-    learningResources: ['Debug-the-Bug: Palindrome', 'Playground']
+    learningResources: ['Debug-the-Bug: Palindrome', 'Playground'],
+    gradient: 'from-teal-600 to-cyan-600'
   },
   
-  // Tree Algorithms
   'tree-search-time-medium': {
     name: 'Binary Search Tree (BST)',
     category: 'Tree',
@@ -261,7 +282,8 @@ const ALGORITHM_DATABASE = {
   if (key < root.val) return bstSearch(root.left, key);
   return bstSearch(root.right, key);
 }`,
-    learningResources: ['Museum: 1962 AVL Trees', 'Drill Coach: BST']
+    learningResources: ['Museum: 1962 AVL Trees', 'Drill Coach: BST'],
+    gradient: 'from-orange-600 to-red-600'
   },
   
   'tree-validate-time-small': {
@@ -279,10 +301,10 @@ const ALGORITHM_DATABASE = {
   }
   return result;
 }`,
-    learningResources: ['Drill Coach: Tree Traversal', 'Museum']
+    learningResources: ['Drill Coach: Tree Traversal', 'Museum'],
+    gradient: 'from-yellow-600 to-amber-600'
   },
   
-  // Collection/Hash
   'collection-search-time-large': {
     name: 'Hash Table',
     category: 'Data Structure',
@@ -301,10 +323,10 @@ const ALGORITHM_DATABASE = {
   }
   return [];
 }`,
-    learningResources: ['Debug-the-Bug: Two Sum', 'Drill Coach: Hash Table']
+    learningResources: ['Debug-the-Bug: Two Sum', 'Drill Coach: Hash Table'],
+    gradient: 'from-violet-600 to-purple-600'
   },
   
-  // Default fallback
   'default': {
     name: 'Linear Search / Brute Force',
     category: 'Basic',
@@ -318,333 +340,456 @@ const ALGORITHM_DATABASE = {
   }
   return -1;
 }`,
-    learningResources: ['Playground', 'Drill Coach']
+    learningResources: ['Playground', 'Drill Coach'],
+    gradient: 'from-gray-600 to-slate-600'
   }
-}
+};
 
 // ============================================================================
 // RECOMMENDATION ENGINE
 // ============================================================================
 
 function getRecommendation(answers) {
-  const { domain, goal, constraints, size } = answers
+  const { domain, goal, constraints, size } = answers;
   
-  // Decision tree logic
   if (domain === 'array') {
     if (goal === 'sort') {
-      if (size === 'small') return 'array-sort-simplicity-small'
-      if (constraints === 'stability') return 'array-sort-stability-medium'
-      if (constraints === 'time' || size === 'large' || size === 'huge') return 'array-sort-time-large'
-      return 'array-sort-stability-medium'
+      if (size === 'small') return 'array-sort-simplicity-small';
+      if (constraints === 'stability') return 'array-sort-stability-medium';
+      if (constraints === 'time' || size === 'large' || size === 'huge') return 'array-sort-time-large';
+      return 'array-sort-stability-medium';
     }
-    if (goal === 'search') {
-      return 'array-search-time-large'
-    }
+    if (goal === 'search') return 'array-search-time-large';
   }
   
   if (domain === 'graph') {
     if (goal === 'path') {
-      if (constraints === 'optimize' || size === 'large') return 'graph-path-optimize-large'
-      return 'graph-path-time-medium'
+      if (constraints === 'optimize' || size === 'large') return 'graph-path-optimize-large';
+      return 'graph-path-time-medium';
     }
-    if (goal === 'validate') return 'graph-validate-time-medium'
+    if (goal === 'validate') return 'graph-validate-time-medium';
   }
   
   if (domain === 'string') {
-    if (goal === 'search') return 'string-search-time-large'
-    if (goal === 'transform' || goal === 'validate') return 'string-transform-simplicity-small'
+    if (goal === 'search') return 'string-search-time-large';
+    if (goal === 'transform' || goal === 'validate') return 'string-transform-simplicity-small';
   }
   
   if (domain === 'tree') {
-    if (goal === 'search') return 'tree-search-time-medium'
-    if (goal === 'validate') return 'tree-validate-time-small'
+    if (goal === 'search') return 'tree-search-time-medium';
+    if (goal === 'validate') return 'tree-validate-time-small';
   }
   
   if (domain === 'collection') {
-    if (goal === 'search') return 'collection-search-time-large'
+    if (goal === 'search') return 'collection-search-time-large';
   }
   
-  return 'default'
-}
-
-// ============================================================================
-// STORAGE
-// ============================================================================
-
-const STORAGE_KEY = 'algo_recommender_history'
-
-function getHistory() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]')
-  } catch {
-    return []
-  }
-}
-
-function saveHistory(entry) {
-  try {
-    const history = getHistory()
-    history.unshift({ ...entry, timestamp: new Date().toISOString(), id: Date.now() })
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(history.slice(0, 30)))
-  } catch (e) {
-    console.warn('Failed to save history:', e)
-  }
+  return 'default';
 }
 
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
-export default function AlgorithmRecommender() {
-  const [currentStep, setCurrentStep] = useState(0)
-  const [answers, setAnswers] = useState({})
-  const [showResult, setShowResult] = useState(false)
-  const [history, setHistory] = useState(getHistory())
+const AlgorithmRecommender = () => {
+  const [currentStep, setCurrentStep] = useState(0);
+  const [answers, setAnswers] = useState({});
+  const [showResult, setShowResult] = useState(false);
+  const [history, setHistory] = useState([]);
   
-  const currentQuestion = QUESTIONS[currentStep]
-  const progress = ((currentStep + 1) / QUESTIONS.length) * 100
+  const currentQuestion = QUESTIONS[currentStep];
+  const progress = ((currentStep + 1) / QUESTIONS.length) * 100;
   
   const recommendation = useMemo(() => {
-    if (!showResult) return null
-    const key = getRecommendation(answers)
-    return ALGORITHM_DATABASE[key]
-  }, [showResult, answers])
+    if (!showResult) return null;
+    const key = getRecommendation(answers);
+    return ALGORITHM_DATABASE[key];
+  }, [showResult, answers]);
   
   const handleAnswer = useCallback((value) => {
-    const newAnswers = { ...answers, [currentQuestion.id]: value }
-    setAnswers(newAnswers)
+    const newAnswers = { ...answers, [currentQuestion.id]: value };
+    setAnswers(newAnswers);
     
     if (currentStep < QUESTIONS.length - 1) {
-      setCurrentStep(prev => prev + 1)
+      setCurrentStep(prev => prev + 1);
     } else {
-      setShowResult(true)
-      const key = getRecommendation(newAnswers)
-      saveHistory({
+      setShowResult(true);
+      const key = getRecommendation(newAnswers);
+      const newEntry = {
         answers: newAnswers,
         recommendation: ALGORITHM_DATABASE[key].name,
-        category: ALGORITHM_DATABASE[key].category
-      })
-      setHistory(getHistory())
+        category: ALGORITHM_DATABASE[key].category,
+        timestamp: new Date().toISOString(),
+        id: Date.now()
+      };
+      setHistory(prev => [newEntry, ...prev].slice(0, 30));
     }
-  }, [currentStep, currentQuestion, answers])
+  }, [currentStep, currentQuestion, answers]);
   
   const restart = useCallback(() => {
-    setCurrentStep(0)
-    setAnswers({})
-    setShowResult(false)
-  }, [])
+    setCurrentStep(0);
+    setAnswers({});
+    setShowResult(false);
+  }, []);
   
   const goBack = useCallback(() => {
     if (currentStep > 0) {
-      setCurrentStep(prev => prev - 1)
+      setCurrentStep(prev => prev - 1);
     }
-  }, [currentStep])
+  }, [currentStep]);
   
   const loadFromHistory = useCallback((entry) => {
-    setAnswers(entry.answers)
-    setCurrentStep(QUESTIONS.length - 1)
-    setShowResult(true)
-  }, [])
+    setAnswers(entry.answers);
+    setCurrentStep(QUESTIONS.length - 1);
+    setShowResult(true);
+  }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-pink-50 px-6 py-10">
-      <div className="max-w-5xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-indigo-950 to-gray-900 text-white">
+      <div className="max-w-5xl mx-auto px-6 py-16">
         {/* Header */}
-        <div className="mb-6 text-center">
-          <h1 className="text-4xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-purple-500 to-pink-600">
+        <motion.div
+          className="text-center mb-12"
+          initial={{ opacity: 0, y: -30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+        >
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500 bg-clip-text text-transparent">
             🧭 Algorithm Recommender
           </h1>
-          <p className="text-sm text-slate-600">
+          <p className="text-lg text-indigo-300">
             Answer a few questions to find the perfect algorithm for your problem
           </p>
-        </div>
+        </motion.div>
 
-        {!showResult ? (
-          <>
-            {/* Progress Bar */}
-            <div className="mb-6 p-5 border border-slate-200 rounded-xl bg-white shadow-sm">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-sm font-medium text-slate-700">
-                  Step {currentStep + 1} of {QUESTIONS.length}
-                </span>
-                <span className="text-sm text-slate-600">{Math.round(progress)}%</span>
-              </div>
-              <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-purple-500 to-pink-500 transition-all duration-500"
-                  style={{ width: `${progress}%` }}
-                />
-              </div>
-            </div>
-
-            {/* Question Card */}
-            <div className="mb-6 p-8 border border-slate-200 rounded-xl bg-white shadow-lg">
-              <h2 className="text-2xl font-bold text-slate-800 mb-6">
-                {currentQuestion.title}
-              </h2>
-              
-              <div className="grid sm:grid-cols-2 gap-4">
-                {currentQuestion.options.map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => handleAnswer(option.value)}
-                    className="p-5 border-2 border-slate-300 rounded-xl text-left hover:border-purple-500 hover:bg-purple-50 transition-all active:scale-95 group"
-                  >
-                    <div className="flex items-center gap-3 mb-2">
-                      <span className="text-3xl group-hover:scale-110 transition-transform">
-                        {option.icon}
-                      </span>
-                      <span className="font-semibold text-slate-800">
-                        {option.label}
-                      </span>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Navigation */}
-            <div className="flex gap-3">
-              {currentStep > 0 && (
-                <button
-                  onClick={goBack}
-                  className="px-6 py-3 rounded-lg border-2 border-slate-300 text-slate-700 font-semibold hover:bg-slate-50 active:scale-95 transition-all"
-                >
-                  ← Back
-                </button>
-              )}
-              <button
-                onClick={restart}
-                className="px-6 py-3 rounded-lg border-2 border-red-300 text-red-700 font-semibold hover:bg-red-50 active:scale-95 transition-all"
+        <AnimatePresence mode="wait">
+          {!showResult ? (
+            <motion.div
+              key="questionnaire"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              {/* Progress Bar */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-8 bg-gray-800/80 backdrop-blur-sm border border-indigo-700 rounded-xl p-6 shadow-lg"
               >
-                🔄 Restart
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            {/* Recommendation Result */}
-            <div className="mb-6 p-8 border-2 border-purple-300 rounded-xl bg-white shadow-xl">
-              <div className="text-center mb-6">
-                <div className="text-6xl mb-3">🎯</div>
-                <h2 className="text-3xl font-bold text-purple-600 mb-2">
-                  {recommendation.name}
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-sm font-medium text-indigo-300 flex items-center gap-2">
+                    <TrendingUp size={16} />
+                    Step {currentStep + 1} of {QUESTIONS.length}
+                  </span>
+                  <span className="text-sm font-bold text-indigo-400">{Math.round(progress)}%</span>
+                </div>
+                <div className="w-full h-3 bg-gray-900 rounded-full overflow-hidden border border-indigo-800">
+                  <motion.div
+                    className="h-full bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-600 rounded-full"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progress}%` }}
+                    transition={{ duration: 0.5, ease: 'easeOut' }}
+                  />
+                </div>
+              </motion.div>
+
+              {/* Question Card */}
+              <motion.div
+                key={currentQuestion.id}
+                initial={{ opacity: 0, x: 100 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -100 }}
+                transition={{ duration: 0.4 }}
+                className="mb-8 bg-gray-800/80 backdrop-blur-sm border-2 border-indigo-700 rounded-xl p-8 shadow-2xl"
+              >
+                <h2 className="text-2xl md:text-3xl font-bold text-white mb-8 flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-xl font-bold">
+                    {currentStep + 1}
+                  </div>
+                  {currentQuestion.title}
                 </h2>
-                <span className="inline-block px-4 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
-                  {recommendation.category}
-                </span>
-              </div>
-
-              <div className="space-y-4 mb-6">
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-700 mb-1">Description</h3>
-                  <p className="text-slate-600">{recommendation.description}</p>
+                
+                <div className="grid sm:grid-cols-2 gap-4">
+                  {currentQuestion.options.map((option, index) => (
+                    <motion.button
+                      key={option.value}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: index * 0.1, duration: 0.3 }}
+                      onClick={() => handleAnswer(option.value)}
+                      whileHover={{ scale: 1.03, y: -4 }}
+                      whileTap={{ scale: 0.97 }}
+                      className="group relative p-6 bg-gray-900/50 border-2 border-indigo-600 rounded-xl text-left overflow-hidden transition-all hover:border-cyan-500 hover:shadow-lg hover:shadow-cyan-500/20"
+                    >
+                      <div className={`absolute inset-0 bg-gradient-to-br ${option.color} opacity-0 group-hover:opacity-10 transition-opacity`} />
+                      
+                      <div className="relative flex items-center gap-4 mb-2">
+                        <div className={`w-14 h-14 rounded-lg bg-gradient-to-br ${option.color} flex items-center justify-center text-3xl transform group-hover:scale-110 transition-transform`}>
+                          {option.icon}
+                        </div>
+                        <span className="font-semibold text-lg text-white group-hover:text-cyan-300 transition-colors">
+                          {option.label}
+                        </span>
+                      </div>
+                      
+                      <ChevronRight className="absolute top-1/2 right-4 transform -translate-y-1/2 text-indigo-500 opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" size={24} />
+                    </motion.button>
+                  ))}
                 </div>
+              </motion.div>
 
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                    <h3 className="text-sm font-semibold text-blue-900 mb-1">Time Complexity</h3>
-                    <code className="text-blue-700">{recommendation.complexity.time}</code>
-                  </div>
-                  <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                    <h3 className="text-sm font-semibold text-green-900 mb-1">Space Complexity</h3>
-                    <code className="text-green-700">{recommendation.complexity.space}</code>
-                  </div>
-                </div>
-
-                <div className="p-4 bg-amber-50 border border-amber-200 rounded-lg">
-                  <h3 className="text-sm font-semibold text-amber-900 mb-1">When to Use</h3>
-                  <p className="text-sm text-amber-800">{recommendation.whenToUse}</p>
-                </div>
-
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-700 mb-2">Code Example</h3>
-                  <pre className="p-4 bg-slate-900 text-slate-100 rounded-lg overflow-x-auto text-xs font-mono">
-                    {recommendation.codeSnippet}
-                  </pre>
-                </div>
-
-                <div>
-                  <h3 className="text-sm font-semibold text-slate-700 mb-2">Alternatives to Consider</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {recommendation.alternatives.map((alt, idx) => (
-                      <span key={idx} className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-sm">
-                        {alt}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="p-4 bg-purple-50 border border-purple-200 rounded-lg">
-                  <h3 className="text-sm font-semibold text-purple-900 mb-2">📚 Learn More</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {recommendation.learningResources.map((resource, idx) => (
-                      <span key={idx} className="px-3 py-1 bg-white border border-purple-300 text-purple-700 rounded-lg text-xs">
-                        {resource}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex gap-3">
-                <button
+              {/* Navigation */}
+              <div className="flex gap-4">
+                {currentStep > 0 && (
+                  <motion.button
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    onClick={goBack}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="flex items-center gap-2 px-6 py-3 rounded-lg bg-gray-700 hover:bg-gray-600 text-white font-semibold transition-all"
+                  >
+                    <ChevronLeft size={20} />
+                    Back
+                  </motion.button>
+                )}
+                <motion.button
                   onClick={restart}
-                  className="flex-1 px-6 py-3 rounded-lg bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold hover:from-purple-700 hover:to-pink-700 shadow-md active:scale-95 transition-all"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="flex items-center gap-2 px-6 py-3 rounded-lg bg-red-600/20 hover:bg-red-600/30 border border-red-500 text-red-400 font-semibold transition-all"
                 >
-                  🔄 Try Another Problem
-                </button>
+                  <RotateCcw size={20} />
+                  Restart
+                </motion.button>
               </div>
-            </div>
+            </motion.div>
+          ) : (
+            <motion.div
+              key="result"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.5 }}
+            >
+              {/* Recommendation Result */}
+              <div className="mb-8 bg-gray-800/80 backdrop-blur-sm border-2 border-indigo-700 rounded-xl p-8 shadow-2xl">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="text-center mb-8"
+                >
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+                    className="text-7xl mb-4"
+                  >
+                    🎯
+                  </motion.div>
+                  <h2 className={`text-4xl font-bold mb-3 bg-gradient-to-r ${recommendation.gradient} bg-clip-text text-transparent`}>
+                    {recommendation.name}
+                  </h2>
+                  <span className={`inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r ${recommendation.gradient} rounded-full text-white font-semibold shadow-lg`}>
+                    <Sparkles size={16} />
+                    {recommendation.category}
+                  </span>
+                </motion.div>
 
-            {/* Your Answers */}
-            <div className="mb-6 p-5 border border-slate-200 rounded-xl bg-white shadow-sm">
-              <h3 className="font-semibold text-slate-800 mb-3">Your Answers</h3>
-              <div className="space-y-2">
-                {QUESTIONS.map((q) => {
-                  const answer = answers[q.id]
-                  const option = q.options.find(o => o.value === answer)
-                  return (
-                    <div key={q.id} className="flex items-center justify-between text-sm">
-                      <span className="text-slate-600">{q.title}</span>
-                      <span className="font-medium text-slate-800">
-                        {option?.icon} {option?.label}
-                      </span>
+                <div className="space-y-6">
+                  {/* Description */}
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="p-4 bg-indigo-900/30 border border-indigo-700 rounded-lg"
+                  >
+                    <h3 className="text-sm font-semibold text-indigo-300 mb-2 flex items-center gap-2">
+                      <BookOpen size={16} />
+                      Description
+                    </h3>
+                    <p className="text-gray-300">{recommendation.description}</p>
+                  </motion.div>
+
+                  {/* Complexity */}
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.3 }}
+                    className="grid md:grid-cols-2 gap-4"
+                  >
+                    <div className="p-4 bg-blue-900/30 border border-blue-700 rounded-lg">
+                      <h3 className="text-sm font-semibold text-blue-300 mb-2 flex items-center gap-2">
+                        <Clock size={16} />
+                        Time Complexity
+                      </h3>
+                      <code className="text-lg text-blue-400 font-mono">{recommendation.complexity.time}</code>
                     </div>
-                  )
-                })}
+                    <div className="p-4 bg-green-900/30 border border-green-700 rounded-lg">
+                      <h3 className="text-sm font-semibold text-green-300 mb-2 flex items-center gap-2">
+                        <Database size={16} />
+                        Space Complexity
+                      </h3>
+                      <code className="text-lg text-green-400 font-mono">{recommendation.complexity.space}</code>
+                    </div>
+                  </motion.div>
+
+                  {/* When to Use */}
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className="p-4 bg-amber-900/30 border border-amber-700 rounded-lg"
+                  >
+                    <h3 className="text-sm font-semibold text-amber-300 mb-2 flex items-center gap-2">
+                      <Target size={16} />
+                      When to Use
+                    </h3>
+                    <p className="text-gray-300">{recommendation.whenToUse}</p>
+                  </motion.div>
+
+                  {/* Code Example */}
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.5 }}
+                  >
+                    <h3 className="text-sm font-semibold text-indigo-300 mb-3 flex items-center gap-2">
+                      <Code size={16} />
+                      Code Example
+                    </h3>
+                    <pre className="p-4 bg-gray-900 border border-gray-700 rounded-lg overflow-x-auto">
+                      <code className="text-sm text-gray-300 font-mono">
+                        {recommendation.codeSnippet}
+                      </code>
+                    </pre>
+                  </motion.div>
+
+                  {/* Alternatives */}
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.6 }}
+                  >
+                    <h3 className="text-sm font-semibold text-indigo-300 mb-3 flex items-center gap-2">
+                      <CheckCircle size={16} />
+                      Alternatives to Consider
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {recommendation.alternatives.map((alt, idx) => (
+                        <span key={idx} className="px-3 py-2 bg-gray-700 border border-gray-600 text-gray-300 rounded-lg text-sm">
+                          {alt}
+                        </span>
+                      ))}
+                    </div>
+                  </motion.div>
+
+                  {/* Learning Resources */}
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.7 }}
+                    className="p-4 bg-purple-900/30 border border-purple-700 rounded-lg"
+                  >
+                    <h3 className="text-sm font-semibold text-purple-300 mb-3 flex items-center gap-2">
+                      <Lightbulb size={16} />
+                      Learn More
+                    </h3>
+                    <div className="flex flex-wrap gap-2">
+                      {recommendation.learningResources.map((resource, idx) => (
+                        <span key={idx} className="px-3 py-1 bg-purple-600/30 border border-purple-500/50 text-purple-300 rounded-md text-xs">
+                          {resource}
+                        </span>
+                      ))}
+                    </div>
+                  </motion.div>
+                </div>
+
+                <motion.button
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.8 }}
+                  onClick={restart}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full mt-8 px-6 py-4 rounded-lg bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold text-lg shadow-lg flex items-center justify-center gap-2"
+                >
+                  <RotateCcw size={20} />
+                  Try Another Problem
+                </motion.button>
               </div>
-            </div>
-          </>
-        )}
+
+              {/* Your Answers */}
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.9 }}
+                className="bg-gray-800/80 backdrop-blur-sm border border-indigo-700 rounded-xl p-6 shadow-lg"
+              >
+                <h3 className="font-semibold text-indigo-300 mb-4 flex items-center gap-2">
+                  <CheckCircle size={18} />
+                  Your Answers
+                </h3>
+                <div className="space-y-3">
+                  {QUESTIONS.map((q) => {
+                    const answer = answers[q.id];
+                    const option = q.options.find(o => o.value === answer);
+                    return (
+                      <div key={q.id} className="flex items-center justify-between text-sm p-3 bg-gray-900/50 rounded-lg">
+                        <span className="text-gray-400">{q.title}</span>
+                        <span className="font-medium text-white flex items-center gap-2">
+                          <span className="text-xl">{option?.icon}</span>
+                          {option?.label}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* History */}
         {history.length > 0 && !showResult && (
-          <div className="p-6 border border-slate-200 rounded-xl bg-white shadow-sm">
-            <h3 className="font-semibold text-slate-800 mb-4">📊 Recent Recommendations</h3>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="mt-8 bg-gray-800/80 backdrop-blur-sm border border-indigo-700 rounded-xl p-6 shadow-lg"
+          >
+            <h3 className="font-semibold text-indigo-300 mb-4 flex items-center gap-2">
+              <History size={18} />
+              Recent Recommendations ({history.length})
+            </h3>
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {history.slice(0, 10).map((entry) => (
-                <div
+                <motion.div
                   key={entry.id}
-                  className="p-3 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  whileHover={{ x: 4 }}
                   onClick={() => loadFromHistory(entry)}
+                  className="p-4 bg-gray-900/50 border border-gray-700 rounded-lg hover:border-indigo-600 transition-all cursor-pointer"
                 >
                   <div className="flex items-center justify-between">
                     <div className="text-sm">
-                      <span className="font-medium">{entry.recommendation}</span>
-                      {' · '}
-                      <span className="text-slate-600">{entry.category}</span>
+                      <span className="font-semibold text-white">{entry.recommendation}</span>
+                      <span className="text-gray-500 mx-2">·</span>
+                      <span className="text-indigo-400">{entry.category}</span>
                     </div>
-                    <span className="text-xs text-slate-500">
+                    <span className="text-xs text-gray-500">
                       {new Date(entry.timestamp).toLocaleDateString()}
                     </span>
                   </div>
-                </div>
+                </motion.div>
               ))}
             </div>
-          </div>
+          </motion.div>
         )}
       </div>
     </div>
-  )
-}
+  );
+};
+
+export default AlgorithmRecommender;

@@ -72,11 +72,6 @@ const HeroSection = () => {
               <Rocket className="w-5 h-5" />
               Start Learning
             </Link>
-            
-            <button className="flex items-center gap-2 px-6 py-3 bg-transparent border-2 border-blue-400 hover:bg-blue-800/50 text-white font-medium rounded-lg transition-all duration-300">
-              <BookOpen className="w-5 h-5" />
-              Explore Topics
-            </button>
           </motion.div>
         </motion.div>
 
