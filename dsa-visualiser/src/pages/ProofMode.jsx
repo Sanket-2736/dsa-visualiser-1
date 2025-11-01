@@ -1,7 +1,23 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  CheckCircle, 
+  XCircle, 
+  Lightbulb, 
+  RotateCcw, 
+  Eye, 
+  EyeOff,
+  Award,
+  Target,
+  HelpCircle,
+  Zap,
+  Lock,
+  Unlock,
+  TrendingUp
+} from 'lucide-react';
 
 // ============================================================================
-// ALGORITHM LIBRARY - Complete proof scenarios
+// ALGORITHM LIBRARY
 // ============================================================================
 
 const ALGORITHM_LIBRARY = {
@@ -136,505 +152,637 @@ const ALGORITHM_LIBRARY = {
       5: 'When i = n, what does the suffix invariant tell us?'
     }
   }
-}
+};
 
 // ============================================================================
-// STORAGE UTILITIES - LocalStorage persistence
+// STORAGE
 // ============================================================================
 
-const STORAGE_KEY = 'proof_mode_progress'
+const STORAGE_KEY = 'proof_mode_progress';
 
 function loadProgress() {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY)
-    return stored ? JSON.parse(stored) : {}
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? JSON.parse(stored) : {};
   } catch {
-    return {}
+    return {};
   }
 }
 
 function saveProgress(algorithmId, data) {
   try {
-    const all = loadProgress()
+    const all = loadProgress();
     all[algorithmId] = {
       ...data,
       lastAttempt: new Date().toISOString()
-    }
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(all))
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
   } catch (error) {
-    console.warn('Failed to save progress:', error)
+    console.warn('Failed to save progress:', error);
   }
 }
 
 function getAlgorithmProgress(algorithmId) {
-  const progress = loadProgress()
-  return progress[algorithmId] || { completed: false, attempts: 0, bestScore: 0 }
+  const progress = loadProgress();
+  return progress[algorithmId] || { completed: false, attempts: 0, bestScore: 0 };
 }
 
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
-export default function ProofMode() {
-  const [selectedAlgo, setSelectedAlgo] = useState('insertion_sort')
-  const [assignments, setAssignments] = useState({})
-  const [result, setResult] = useState(null)
-  const [showHints, setShowHints] = useState(false)
-  const [activeHint, setActiveHint] = useState(null)
-  const [showSolution, setShowSolution] = useState(false)
-  const [attempts, setAttempts] = useState(0)
+export default function InteractiveProofMode() {
+  const [selectedAlgo, setSelectedAlgo] = useState('insertion_sort');
+  const [assignments, setAssignments] = useState({});
+  const [result, setResult] = useState(null);
+  const [showHints, setShowHints] = useState(false);
+  const [activeHint, setActiveHint] = useState(null);
+  const [showSolution, setShowSolution] = useState(false);
+  const [attempts, setAttempts] = useState(0);
   
-  const algorithm = ALGORITHM_LIBRARY[selectedAlgo]
+  const algorithm = ALGORITHM_LIBRARY[selectedAlgo];
   
-  // Load saved progress on algorithm change
   useEffect(() => {
-    const progress = getAlgorithmProgress(selectedAlgo)
-    setAssignments({})
-    setResult(null)
-    setShowHints(false)
-    setActiveHint(null)
-    setShowSolution(false)
-    setAttempts(progress.attempts || 0)
-  }, [selectedAlgo])
+    const progress = getAlgorithmProgress(selectedAlgo);
+    setAssignments({});
+    setResult(null);
+    setShowHints(false);
+    setActiveHint(null);
+    setShowSolution(false);
+    setAttempts(progress.attempts || 0);
+  }, [selectedAlgo]);
   
-  // Calculate current score
   const score = useMemo(() => {
-    let correct = 0
-    let total = 0
+    let correct = 0;
+    let total = 0;
     
     for (const step of algorithm.steps) {
-      const required = new Set(algorithm.correctAssignments[step.id] || [])
-      const assigned = new Set(assignments[step.id] || [])
+      const required = new Set(algorithm.correctAssignments[step.id] || []);
+      const assigned = new Set(assignments[step.id] || []);
       
-      total += required.size
+      total += required.size;
       
       for (const inv of required) {
-        if (assigned.has(inv)) correct++
+        if (assigned.has(inv)) correct++;
       }
     }
     
-    return total > 0 ? Math.round((correct / total) * 100) : 0
-  }, [algorithm, assignments])
+    return total > 0 ? Math.round((correct / total) * 100) : 0;
+  }, [algorithm, assignments]);
   
-  // Toggle invariant assignment
   function toggleInvariant(stepId, invKey) {
-    if (result?.success) return // Lock after success
+    if (result?.success) return;
     
     setAssignments(prev => {
-      const current = new Set(prev[stepId] || [])
+      const current = new Set(prev[stepId] || []);
       if (current.has(invKey)) {
-        current.delete(invKey)
+        current.delete(invKey);
       } else {
-        current.add(invKey)
+        current.add(invKey);
       }
-      return { ...prev, [stepId]: Array.from(current) }
-    })
-    setResult(null) // Clear result on change
+      return { ...prev, [stepId]: Array.from(current) };
+    });
+    setResult(null);
   }
   
-  // Check correctness
   function checkProof() {
-    let allCorrect = true
-    const stepResults = {}
+    let allCorrect = true;
+    const stepResults = {};
     
     for (const step of algorithm.steps) {
-      const required = new Set(algorithm.correctAssignments[step.id] || [])
-      const assigned = new Set(assignments[step.id] || [])
+      const required = new Set(algorithm.correctAssignments[step.id] || []);
+      const assigned = new Set(assignments[step.id] || []);
       
-      const missing = [...required].filter(k => !assigned.has(k))
-      const extra = [...assigned].filter(k => !required.has(k))
+      const missing = [...required].filter(k => !assigned.has(k));
+      const extra = [...assigned].filter(k => !required.has(k));
       
       stepResults[step.id] = {
         correct: missing.length === 0 && extra.length === 0,
         missing,
         extra
-      }
+      };
       
-      if (!stepResults[step.id].correct) allCorrect = false
+      if (!stepResults[step.id].correct) allCorrect = false;
     }
     
-    const newAttempts = attempts + 1
-    setAttempts(newAttempts)
+    const newAttempts = attempts + 1;
+    setAttempts(newAttempts);
     
     setResult({
       success: allCorrect,
       stepResults,
       score
-    })
+    });
     
-    // Save progress
     if (allCorrect) {
-      const progress = getAlgorithmProgress(selectedAlgo)
+      const progress = getAlgorithmProgress(selectedAlgo);
       saveProgress(selectedAlgo, {
         completed: true,
         attempts: newAttempts,
         bestScore: Math.max(progress.bestScore || 0, score),
         completedAt: new Date().toISOString()
-      })
+      });
     }
   }
   
-  // Reset current algorithm
   function reset() {
-    setAssignments({})
-    setResult(null)
-    setShowHints(false)
-    setActiveHint(null)
-    setShowSolution(false)
+    setAssignments({});
+    setResult(null);
+    setShowHints(false);
+    setActiveHint(null);
+    setShowSolution(false);
   }
   
-  // Show solution
   function revealSolution() {
-    setAssignments(algorithm.correctAssignments)
-    setShowSolution(true)
-    setResult(null)
+    setAssignments(algorithm.correctAssignments);
+    setShowSolution(true);
+    setResult(null);
   }
   
-  // Get invariant category badge color
-  function getCategoryColor(category) {
+  const getCategoryColor = (category) => {
     const colors = {
-      correctness: 'bg-blue-100 text-blue-700 border-blue-300',
-      safety: 'bg-amber-100 text-amber-700 border-amber-300',
-      termination: 'bg-purple-100 text-purple-700 border-purple-300',
-      precondition: 'bg-green-100 text-green-700 border-green-300'
-    }
-    return colors[category] || 'bg-gray-100 text-gray-700 border-gray-300'
-  }
+      correctness: 'from-blue-600 to-cyan-600',
+      safety: 'from-amber-600 to-orange-600',
+      termination: 'from-purple-600 to-pink-600',
+      precondition: 'from-emerald-600 to-green-600'
+    };
+    return colors[category] || 'from-gray-600 to-slate-600';
+  };
   
-  // Get difficulty badge color
-  function getDifficultyColor(difficulty) {
+  const getDifficultyColor = (difficulty) => {
     const colors = {
-      beginner: 'bg-green-100 text-green-700',
-      intermediate: 'bg-yellow-100 text-yellow-700',
-      advanced: 'bg-red-100 text-red-700'
-    }
-    return colors[difficulty] || 'bg-gray-100 text-gray-700'
-  }
+      beginner: 'from-green-600 to-emerald-600',
+      intermediate: 'from-yellow-600 to-orange-600',
+      advanced: 'from-red-600 to-pink-600'
+    };
+    return colors[difficulty] || 'from-gray-600 to-slate-600';
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 px-6 py-10">
-      <div className="max-w-7xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-indigo-950 to-gray-900 text-white">
+      <div className="max-w-7xl mx-auto px-6 py-16">
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-cyan-500 to-blue-600">
-            Interactive Proof Mode
+        <motion.div
+          className="text-center mb-12"
+          initial={{ opacity: 0, y: -30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+        >
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500 bg-clip-text text-transparent">
+            🧩 Interactive Proof Mode
           </h1>
-          <p className="text-sm text-slate-600">
+          <p className="text-lg text-indigo-300">
             Master algorithm correctness by assigning loop invariants to proof steps
           </p>
+        </motion.div>
+
+        {/* Stats Bar */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-gray-800/80 backdrop-blur-sm border border-indigo-700 rounded-xl p-4"
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <Target size={16} className="text-cyan-400" />
+              <span className="text-xs text-indigo-300">Current Score</span>
+            </div>
+            <div className={`text-2xl font-bold ${score === 100 ? 'text-emerald-400' : 'text-cyan-400'}`}>
+              {score}%
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.1 }}
+            className="bg-gray-800/80 backdrop-blur-sm border border-indigo-700 rounded-xl p-4"
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <TrendingUp size={16} className="text-purple-400" />
+              <span className="text-xs text-indigo-300">Attempts</span>
+            </div>
+            <div className="text-2xl font-bold text-purple-400">{attempts}</div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="bg-gray-800/80 backdrop-blur-sm border border-indigo-700 rounded-xl p-4"
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <Zap size={16} className="text-yellow-400" />
+              <span className="text-xs text-indigo-300">Steps</span>
+            </div>
+            <div className="text-2xl font-bold text-yellow-400">{algorithm.steps.length}</div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="bg-gray-800/80 backdrop-blur-sm border border-indigo-700 rounded-xl p-4"
+          >
+            <div className="flex items-center gap-2 mb-1">
+              <Award size={16} className="text-orange-400" />
+              <span className="text-xs text-indigo-300">Invariants</span>
+            </div>
+            <div className="text-2xl font-bold text-orange-400">{algorithm.invariants.length}</div>
+          </motion.div>
         </div>
 
-        {/* Algorithm Selector */}
-        <div className="mb-6 p-5 border border-slate-200 rounded-xl bg-white shadow-sm">
-          <h2 className="text-sm font-semibold text-slate-700 mb-3">Select Algorithm</h2>
+        {/* Algorithm Selection */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.4 }}
+          className="mb-8 bg-gray-800/80 backdrop-blur-sm border border-indigo-700 rounded-xl p-6 shadow-lg"
+        >
+          <h2 className="text-xl font-semibold text-white mb-4">Select Algorithm</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {Object.entries(ALGORITHM_LIBRARY).map(([id, algo]) => {
-              const progress = getAlgorithmProgress(id)
+            {Object.entries(ALGORITHM_LIBRARY).map(([id, algo], idx) => {
+              const progress = getAlgorithmProgress(id);
               return (
-                <button
+                <motion.button
                   key={id}
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: idx * 0.05 }}
                   onClick={() => setSelectedAlgo(id)}
-                  className={`p-3 rounded-lg border-2 text-left transition-all ${
+                  whileHover={{ scale: 1.03, y: -2 }}
+                  whileTap={{ scale: 0.97 }}
+                  className={`p-4 rounded-lg border-2 text-left transition-all ${
                     selectedAlgo === id
-                      ? 'border-blue-500 bg-blue-50 shadow-md'
-                      : 'border-slate-200 bg-white hover:border-blue-300 hover:shadow-sm'
+                      ? 'border-cyan-500 bg-cyan-900/30 shadow-lg'
+                      : 'border-gray-700 bg-gray-900/50 hover:border-indigo-600'
                   }`}
                 >
-                  <div className="flex items-start justify-between mb-1">
-                    <h3 className="text-sm font-semibold text-slate-800">{algo.name}</h3>
+                  <div className="flex items-start justify-between mb-2">
+                    <h3 className="text-sm font-semibold text-white">{algo.name}</h3>
                     {progress.completed && (
-                      <svg className="w-5 h-5 text-green-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-label="Completed">
-                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                      </svg>
+                      <CheckCircle size={18} className="text-emerald-400 flex-shrink-0" />
                     )}
                   </div>
-                  <p className="text-xs text-slate-600 mb-2 line-clamp-2">{algo.description}</p>
-                  <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium ${getDifficultyColor(algo.difficulty)}`}>
+                  <p className="text-xs text-gray-400 mb-3 line-clamp-2">{algo.description}</p>
+                  <span className={`inline-block px-3 py-1 rounded-lg text-xs font-semibold bg-gradient-to-r ${getDifficultyColor(algo.difficulty)} text-white`}>
                     {algo.difficulty}
                   </span>
-                </button>
-              )
+                </motion.button>
+              );
             })}
           </div>
-        </div>
+        </motion.div>
 
-        {/* Main Content Grid */}
+        {/* Main Grid */}
         <div className="grid lg:grid-cols-3 gap-6">
-          {/* Left Column - Steps & Assignments */}
+          {/* Left Column - Steps */}
           <div className="lg:col-span-2 space-y-4">
             {/* Progress Header */}
-            <div className="p-4 border border-slate-200 rounded-xl bg-white shadow-sm">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-lg font-semibold text-slate-800">{algorithm.name}</h2>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-gray-800/80 backdrop-blur-sm border border-indigo-700 rounded-xl p-6 shadow-lg"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-white">{algorithm.name}</h2>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-600">Score:</span>
-                  <span className={`text-lg font-bold ${score === 100 ? 'text-green-600' : 'text-blue-600'}`}>
-                    {score}%
-                  </span>
+                  {result?.success ? <Lock size={20} className="text-emerald-400" /> : <Unlock size={20} className="text-gray-400" />}
                 </div>
               </div>
-              <p className="text-sm text-slate-600 mb-3">{algorithm.description}</p>
+              <p className="text-sm text-gray-300 mb-4">{algorithm.description}</p>
               
-              {/* Progress Bar */}
-              <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-blue-500 to-cyan-500 transition-all duration-500"
-                  style={{ width: `${score}%` }}
-                  role="progressbar"
-                  aria-valuenow={score}
-                  aria-valuemin="0"
-                  aria-valuemax="100"
-                  aria-label="Proof completion"
+              <div className="w-full h-3 bg-gray-700 rounded-full overflow-hidden">
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{ width: `${score}%` }}
+                  transition={{ duration: 0.5, ease: 'easeOut' }}
+                  className={`h-full rounded-full ${
+                    score === 100 
+                      ? 'bg-gradient-to-r from-emerald-500 to-green-500' 
+                      : 'bg-gradient-to-r from-cyan-500 to-indigo-500'
+                  }`}
                 />
               </div>
-            </div>
+            </motion.div>
 
             {/* Steps */}
             <div className="space-y-3">
-              {algorithm.steps.map((step) => {
-                const stepResult = result?.stepResults?.[step.id]
-                const isCorrect = stepResult?.correct
-                const hasError = stepResult && !stepResult.correct
+              {algorithm.steps.map((step, idx) => {
+                const stepResult = result?.stepResults?.[step.id];
+                const isCorrect = stepResult?.correct;
+                const hasError = stepResult && !stepResult.correct;
                 
                 return (
-                  <div
+                  <motion.div
                     key={step.id}
-                    className={`p-4 border-2 rounded-xl bg-white shadow-sm transition-all ${
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: idx * 0.1 }}
+                    className={`p-5 rounded-xl border-2 transition-all ${
                       isCorrect
-                        ? 'border-green-300 bg-green-50'
+                        ? 'border-emerald-500 bg-emerald-900/20'
                         : hasError
-                        ? 'border-red-300 bg-red-50'
-                        : 'border-slate-200'
+                        ? 'border-red-500 bg-red-900/20'
+                        : 'border-gray-700 bg-gray-800/50'
                     }`}
                   >
-                    {/* Step Header */}
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="flex items-center justify-center w-6 h-6 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">
+                        <div className="flex items-center gap-2 mb-2">
+                          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 flex items-center justify-center text-white font-bold text-sm">
                             {step.id}
-                          </span>
-                          <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">
+                          </div>
+                          <span className="text-xs px-3 py-1 rounded-full bg-indigo-600/30 text-indigo-300 font-medium capitalize">
                             {step.phase}
                           </span>
                         </div>
-                        <p className="text-sm text-slate-800 font-medium">{step.text}</p>
+                        <p className="text-sm text-white font-medium">{step.text}</p>
                       </div>
                       
-                      {/* Hint Button */}
-                      <button
+                      <motion.button
                         onClick={() => setActiveHint(activeHint === step.id ? null : step.id)}
-                        className="ml-2 p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                        aria-label={`Hint for step ${step.id}`}
-                        aria-expanded={activeHint === step.id}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        className="ml-2 p-2 text-gray-400 hover:text-cyan-400 hover:bg-cyan-900/30 rounded-lg transition-colors"
                       >
-                        <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-.867.5 1 1 0 11-1.731-1A3 3 0 0113 8a3.001 3.001 0 01-2 2.83V11a1 1 0 11-2 0v-1a1 1 0 011-1 1 1 0 100-2zm0 8a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
-                        </svg>
-                      </button>
+                        <HelpCircle size={20} />
+                      </motion.button>
                     </div>
 
-                    {/* Hint */}
-                    {activeHint === step.id && algorithm.hints[step.id] && (
-                      <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                        <p className="text-xs text-blue-800">
-                          <strong>Hint:</strong> {algorithm.hints[step.id]}
-                        </p>
-                      </div>
-                    )}
+                    <AnimatePresence>
+                      {activeHint === step.id && algorithm.hints[step.id] && (
+                        <motion.div
+                          initial={{ opacity: 0, height: 0 }}
+                          animate={{ opacity: 1, height: 'auto' }}
+                          exit={{ opacity: 0, height: 0 }}
+                          className="mb-3 p-3 bg-cyan-900/30 border border-cyan-700 rounded-lg overflow-hidden"
+                        >
+                          <div className="flex items-start gap-2">
+                            <Lightbulb size={16} className="text-cyan-400 flex-shrink-0 mt-0.5" />
+                            <p className="text-xs text-cyan-200">{algorithm.hints[step.id]}</p>
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
 
-                    {/* Invariant Chips */}
                     <div className="flex flex-wrap gap-2">
                       {algorithm.invariants.map((inv) => {
-                        const isAssigned = (assignments[step.id] || []).includes(inv.key)
-                        const isRequired = (algorithm.correctAssignments[step.id] || []).includes(inv.key)
-                        const showingResult = result !== null
+                        const isAssigned = (assignments[step.id] || []).includes(inv.key);
+                        const isRequired = (algorithm.correctAssignments[step.id] || []).includes(inv.key);
+                        const showingResult = result !== null;
                         
-                        let chipStyle = 'bg-white border-slate-300 text-slate-700 hover:border-blue-400'
+                        let chipStyle = 'bg-gray-900 border-gray-600 text-gray-300 hover:border-indigo-500';
                         
                         if (isAssigned) {
                           if (showingResult) {
                             chipStyle = isRequired
-                              ? 'bg-green-100 border-green-400 text-green-800'
-                              : 'bg-red-100 border-red-400 text-red-800'
+                              ? 'bg-emerald-600 border-emerald-500 text-white'
+                              : 'bg-red-600 border-red-500 text-white';
                           } else {
-                            chipStyle = 'bg-blue-100 border-blue-400 text-blue-800'
+                            chipStyle = 'bg-indigo-600 border-indigo-500 text-white';
                           }
                         }
                         
                         return (
-                          <button
+                          <motion.button
                             key={inv.key}
                             onClick={() => toggleInvariant(step.id, inv.key)}
                             disabled={result?.success}
+                            whileHover={!result?.success ? { scale: 1.05 } : {}}
+                            whileTap={!result?.success ? { scale: 0.95 } : {}}
                             className={`px-3 py-1.5 rounded-lg text-xs font-medium border-2 transition-all ${chipStyle} ${
-                              result?.success ? 'cursor-not-allowed opacity-75' : 'hover:shadow-sm active:scale-95'
+                              result?.success ? 'cursor-not-allowed opacity-75' : ''
                             }`}
-                            aria-pressed={isAssigned}
-                            aria-label={`${inv.text} for step ${step.id}`}
                           >
                             {inv.text}
-                          </button>
-                        )
+                          </motion.button>
+                        );
                       })}
                     </div>
 
-                    {/* Step Error Feedback */}
                     {hasError && (
-                      <div className="mt-3 text-xs space-y-1">
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="mt-3 text-xs space-y-1"
+                      >
                         {stepResult.missing.length > 0 && (
-                          <p className="text-red-700">
+                          <p className="text-red-400">
                             <strong>Missing:</strong> {stepResult.missing.map(k => algorithm.invariants.find(i => i.key === k)?.text).join(', ')}
                           </p>
                         )}
                         {stepResult.extra.length > 0 && (
-                          <p className="text-red-700">
+                          <p className="text-red-400">
                             <strong>Extra:</strong> {stepResult.extra.map(k => algorithm.invariants.find(i => i.key === k)?.text).join(', ')}
                           </p>
                         )}
-                      </div>
+                      </motion.div>
                     )}
-                  </div>
-                )
+                  </motion.div>
+                );
               })}
             </div>
 
             {/* Action Buttons */}
             <div className="flex flex-wrap gap-3">
-              <button
+              <motion.button
                 onClick={checkProof}
                 disabled={result?.success}
-                className="px-5 py-2.5 rounded-lg bg-blue-600 text-white font-medium hover:bg-blue-700 active:scale-95 transition-all disabled:bg-gray-400 disabled:cursor-not-allowed shadow-sm"
+                whileHover={!result?.success ? { scale: 1.05 } : {}}
+                whileTap={!result?.success ? { scale: 0.95 } : {}}
+                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold rounded-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
+                <CheckCircle size={20} />
                 Check Proof
-              </button>
-              <button
+              </motion.button>
+
+              <motion.button
                 onClick={reset}
-                className="px-5 py-2.5 rounded-lg border-2 border-slate-300 text-slate-700 font-medium hover:bg-slate-50 active:scale-95 transition-all"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="flex items-center gap-2 px-6 py-3 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-lg transition-all"
               >
+                <RotateCcw size={20} />
                 Reset
-              </button>
-              <button
+              </motion.button>
+
+              <motion.button
                 onClick={revealSolution}
-                className="px-5 py-2.5 rounded-lg border-2 border-amber-300 text-amber-700 font-medium hover:bg-amber-50 active:scale-95 transition-all"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="flex items-center gap-2 px-6 py-3 bg-amber-600 hover:bg-amber-500 text-white font-semibold rounded-lg transition-all"
               >
+                <Eye size={20} />
                 Show Solution
-              </button>
-              <button
+              </motion.button>
+
+              <motion.button
                 onClick={() => setShowHints(!showHints)}
-                className="px-5 py-2.5 rounded-lg border-2 border-purple-300 text-purple-700 font-medium hover:bg-purple-50 active:scale-95 transition-all"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="flex items-center gap-2 px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white font-semibold rounded-lg transition-all"
               >
+                {showHints ? <EyeOff size={20} /> : <Eye size={20} />}
                 {showHints ? 'Hide' : 'Show'} All Hints
-              </button>
+              </motion.button>
             </div>
 
             {/* Result Message */}
-            {result && (
-              <div
-                className={`p-4 rounded-xl border-2 ${
-                  result.success
-                    ? 'bg-green-50 border-green-300'
-                    : 'bg-amber-50 border-amber-300'
-                }`}
-                role="alert"
-              >
-                <div className="flex items-start gap-3">
-                  <svg
-                    className={`w-6 h-6 flex-shrink-0 ${
-                      result.success ? 'text-green-600' : 'text-amber-600'
-                    }`}
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                    aria-hidden="true"
-                  >
+            <AnimatePresence>
+              {result && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className={`p-5 rounded-xl border-2 ${
+                    result.success
+                      ? 'bg-emerald-900/30 border-emerald-500'
+                      : 'bg-amber-900/30 border-amber-500'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
                     {result.success ? (
-                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      <CheckCircle size={24} className="text-emerald-400 flex-shrink-0" />
                     ) : (
-                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      <XCircle size={24} className="text-amber-400 flex-shrink-0" />
                     )}
-                  </svg>
-                  <div className="flex-1">
-                    <h3 className={`font-semibold text-sm mb-1 ${result.success ? 'text-green-900' : 'text-amber-900'}`}>
-                      {result.success ? '🎉 Proof Complete!' : '⚠️ Proof Incomplete'}
-                    </h3>
-                    <p className={`text-sm ${result.success ? 'text-green-800' : 'text-amber-800'}`}>
-                      {result.success
-                        ? `Perfect! You've correctly assigned all invariants. Score: ${result.score}%`
-                        : `Some invariants are missing or misplaced. Review the highlighted steps. Score: ${result.score}%`}
-                    </p>
-                    <p className="text-xs text-slate-600 mt-1">Attempts: {attempts}</p>
+                    <div className="flex-1">
+                      <h3 className={`font-bold text-lg mb-1 ${result.success ? 'text-emerald-300' : 'text-amber-300'}`}>
+                        {result.success ? '🎉 Proof Complete!' : '⚠️ Proof Incomplete'}
+                      </h3>
+                      <p className={`text-sm ${result.success ? 'text-emerald-200' : 'text-amber-200'}`}>
+                        {result.success
+                          ? `Perfect! You've correctly assigned all invariants. Score: ${result.score}%`
+                          : `Some invariants are missing or misplaced. Review the highlighted steps. Score: ${result.score}%`}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">Attempts: {attempts}</p>
+                    </div>
                   </div>
-                </div>
-              </div>
-            )}
+                </motion.div>
+              )}
 
-            {showSolution && (
-              <div className="p-4 bg-amber-50 border-2 border-amber-300 rounded-xl" role="alert">
-                <p className="text-sm text-amber-900">
-                  <strong>Solution revealed.</strong> Study the correct assignments above, then reset to try again.
-                </p>
-              </div>
-            )}
+              {showSolution && (
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -20 }}
+                  className="p-5 bg-amber-900/30 border-2 border-amber-500 rounded-xl"
+                >
+                  <p className="text-sm text-amber-200">
+                    <strong>Solution revealed.</strong> Study the correct assignments above, then reset to try again.
+                  </p>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Right Column - Reference */}
           <div className="space-y-4">
-            {/* Invariants Legend */}
-            <div className="p-4 border border-slate-200 rounded-xl bg-white shadow-sm sticky top-4">
-              <h3 className="font-semibold text-slate-800 mb-3">Available Invariants</h3>
-              <div className="space-y-2">
-                {algorithm.invariants.map((inv) => (
-                  <div key={inv.key} className="text-sm">
-                    <div className="flex items-start gap-2">
-                      <span className={`mt-0.5 px-2 py-0.5 rounded text-xs font-medium border ${getCategoryColor(inv.category)}`}>
-                        {inv.category}
-                      </span>
-                    </div>
-                    <p className="text-slate-700 mt-1">{inv.text}</p>
-                  </div>
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5 }}
+              className="bg-gray-800/80 backdrop-blur-sm border border-indigo-700 rounded-xl p-6 shadow-lg sticky top-4"
+            >
+              <h3 className="font-semibold text-white mb-4">Available Invariants</h3>
+              <div className="space-y-3">
+                {algorithm.invariants.map((inv, idx) => (
+                  <motion.div
+                    key={inv.key}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: 0.6 + idx * 0.05 }}
+                    className="text-sm"
+                  >
+                    <span className={`inline-block px-3 py-1 rounded-lg text-xs font-semibold bg-gradient-to-r ${getCategoryColor(inv.category)} text-white mb-2`}>
+                      {inv.category}
+                    </span>
+                    <p className="text-gray-300">{inv.text}</p>
+                  </motion.div>
                 ))}
               </div>
 
-              <div className="mt-4 pt-4 border-t border-slate-200">
-                <h4 className="text-xs font-semibold text-slate-600 mb-2">Category Guide</h4>
-                <ul className="text-xs text-slate-600 space-y-1">
-                  <li><strong>Correctness:</strong> What must be true for the algorithm to work</li>
-                  <li><strong>Safety:</strong> Bounds and preconditions</li>
-                  <li><strong>Termination:</strong> Progress toward completion</li>
-                  <li><strong>Precondition:</strong> Input requirements</li>
+              <div className="mt-6 pt-6 border-t border-gray-700">
+                <h4 className="text-xs font-semibold text-indigo-300 mb-3">Category Guide</h4>
+                <ul className="text-xs text-gray-400 space-y-2">
+                  <li className="flex items-start gap-2">
+                    <span className="text-cyan-400">•</span>
+                    <span><strong className="text-gray-300">Correctness:</strong> What must be true for the algorithm to work</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-cyan-400">•</span>
+                    <span><strong className="text-gray-300">Safety:</strong> Bounds and preconditions</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-cyan-400">•</span>
+                    <span><strong className="text-gray-300">Termination:</strong> Progress toward completion</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-cyan-400">•</span>
+                    <span><strong className="text-gray-300">Precondition:</strong> Input requirements</span>
+                  </li>
                 </ul>
               </div>
-            </div>
+            </motion.div>
 
-            {/* Tips */}
-            <div className="p-4 border border-blue-200 rounded-xl bg-blue-50 shadow-sm">
-              <h3 className="font-semibold text-blue-900 mb-2">💡 Tips</h3>
-              <ul className="text-xs text-blue-800 space-y-1.5 list-disc list-inside">
-                <li>Each step can require multiple invariants</li>
-                <li>Initialization establishes the base case</li>
-                <li>Maintenance preserves invariants through iterations</li>
-                <li>Termination uses invariants to prove correctness</li>
-                <li>Click hint icons (?) for step-specific guidance</li>
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.7 }}
+              className="bg-blue-900/30 border border-blue-700 rounded-xl p-5 shadow-lg"
+            >
+              <h3 className="font-semibold text-blue-300 mb-3 flex items-center gap-2">
+                <Lightbulb size={18} />
+                Tips
+              </h3>
+              <ul className="text-xs text-blue-200 space-y-2">
+                <li className="flex items-start gap-2">
+                  <span className="text-cyan-400">•</span>
+                  <span>Each step can require multiple invariants</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-cyan-400">•</span>
+                  <span>Initialization establishes the base case</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-cyan-400">•</span>
+                  <span>Maintenance preserves invariants through iterations</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-cyan-400">•</span>
+                  <span>Termination uses invariants to prove correctness</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-cyan-400">•</span>
+                  <span>Click hint icons (?) for step-specific guidance</span>
+                </li>
               </ul>
-            </div>
+            </motion.div>
 
-            {/* All Hints Panel */}
-            {showHints && (
-              <div className="p-4 border border-purple-200 rounded-xl bg-purple-50 shadow-sm">
-                <h3 className="font-semibold text-purple-900 mb-3">All Hints</h3>
-                <div className="space-y-2">
-                  {algorithm.steps.map((step) => (
-                    <div key={step.id} className="text-xs">
-                      <p className="font-medium text-purple-800">Step {step.id}:</p>
-                      <p className="text-purple-700">{algorithm.hints[step.id]}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+            <AnimatePresence>
+              {showHints && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="bg-purple-900/30 border border-purple-700 rounded-xl p-5 shadow-lg overflow-hidden"
+                >
+                  <h3 className="font-semibold text-purple-300 mb-3">All Hints</h3>
+                  <div className="space-y-3">
+                    {algorithm.steps.map((step) => (
+                      <div key={step.id} className="text-xs">
+                        <p className="font-semibold text-purple-200 mb-1">Step {step.id}:</p>
+                        <p className="text-purple-300">{algorithm.hints[step.id]}</p>
+                      </div>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
       </div>
     </div>
-  )
+  );
 }

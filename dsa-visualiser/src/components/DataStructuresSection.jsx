@@ -164,7 +164,7 @@ const StructureCard = ({ structure, index }) => (
         <Link to={structure.path} className="h-full block">
             <div className={`h-full p-[1px] rounded-xl ${structure.bg} overflow-hidden border border-gray-700`}>
                 <div className="h-full bg-gray-900 rounded-xl backdrop-blur-sm p-5 flex flex-col transition-all duration-300 group-hover:bg-gray-800">
-                    <div className={`mb-4 p-2.5 rounded-lg ${structure.bg} w-fit ${structure.color}`}>
+                    <div className={`mb-4 p-2.5 rounded-lg ${structure.bg} w-fit text-white`}>
                         {structure.icon}
                     </div>
                     
@@ -232,15 +232,9 @@ const DataStructuresSection = () => {
                         Data Structures 💾
                     </h2>
                     <p className="text-lg text-gray-400 max-w-2xl mx-auto">
-                        These are the **building blocks** of programming. Master how data is organized to write powerful, efficient code.
+                        These are the <b>building blocks</b> of programming. Master how data is organized to write powerful, efficient code.
                     </p>
                 </motion.div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-20">
-                    {DATA_STRUCTURES.map((structure, index) => (
-                        <StructureCard key={structure.title} structure={structure} index={index} />
-                    ))}
-                </div>
 
                 <div className="h-0.5 bg-gray-800 max-w-4xl mx-auto my-16" />
 
@@ -256,16 +250,9 @@ const DataStructuresSection = () => {
                         Algorithms ⚔️
                     </h2>
                     <p className="text-lg text-gray-400 max-w-2xl mx-auto">
-                        These are the **recipes** to solve problems. See the step-by-step logic behind sorting, searching, and complex puzzles.
+                        These are the <b>recipes</b> to solve problems. See the step-by-step logic behind sorting, searching, and complex puzzles.
                     </p>
-                </motion.div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                    {ALGORITHMS.map((algorithm, index) => (
-                        <StructureCard key={algorithm.title} structure={algorithm} index={index} />
-                    ))}
-                </div>
-                
+                </motion.div>                
             </div>
         </section>
     );

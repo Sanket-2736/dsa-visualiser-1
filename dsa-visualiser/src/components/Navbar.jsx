@@ -222,14 +222,14 @@ const Navbar = () => {
           <select
             value={explainLevel}
             onChange={(e)=>setExplainLevel(e.target.value)}
-            className="text-sm text-blue-900 rounded px-2 py-1"
+            className="text-sm text-blue-900 bg-white rounded px-2 py-1"
           >
             <option value="beginner">Beginner</option>
             <option value="intermediate">Intermediate</option>
             <option value="expert">Expert</option>
           </select>
         </div>
-        <button onClick={()=>setProfileOpen(true)} className="hidden md:inline-flex ml-2 px-3 py-2 rounded-lg bg-white text-blue-900 text-sm">Profile</button>
+        {/* <button onClick={()=>setProfileOpen(true)} className="hidden md:inline-flex ml-2 px-3 py-2 rounded-lg bg-white text-blue-900 text-sm">Profile</button> */}
 
         {/* Mobile Menu Button */}
         <button 
@@ -351,7 +351,7 @@ const Navbar = () => {
                 <option value="expert">Expert</option>
               </select>
             </div>
-            <button onClick={()=>{ setProfileOpen(true); setMobileMenuOpen(false) }} className="mt-4 w-full px-4 py-3 rounded-lg bg-white text-blue-900">Profile</button>
+            {/* <button onClick={()=>{ setProfileOpen(true); setMobileMenuOpen(false) }} className="mt-4 w-full px-4 py-3 rounded-lg bg-white text-blue-900">Profile</button> */}
           </motion.div>
         )}
       </AnimatePresence>

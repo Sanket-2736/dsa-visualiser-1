@@ -1,9 +1,25 @@
-import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react'
-import { toast, ToastContainer } from 'react-toastify'
-import 'react-toastify/dist/ReactToastify.css'
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  Play, 
+  Eye, 
+  EyeOff, 
+  Save, 
+  FolderOpen, 
+  Layers,
+  Code,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Lightbulb,
+  AlertCircle,
+  FileCode,
+  Trash2,
+  Download
+} from 'lucide-react';
 
 // ============================================================================
-// PROBLEM LIBRARY - Complete DSA problem set with tests
+// PROBLEM LIBRARY
 // ============================================================================
 
 const PROBLEM_LIBRARY = {
@@ -41,7 +57,7 @@ const PROBLEM_LIBRARY = {
     id: 'reverse-string',
     title: 'Reverse String',
     difficulty: 'easy',
-    description: 'Write a function that reverses a string. The input string is given as a string.',
+    description: 'Write a function that reverses a string.',
     signature: 'solve(s)',
     template: `function solve(s) {
   // Your code here
@@ -231,10 +247,10 @@ const PROBLEM_LIBRARY = {
     timeLimit: 500,
     tags: ['string', 'two-pointers']
   }
-}
+};
 
 // ============================================================================
-// STORAGE UTILITIES - Comprehensive persistence
+// STORAGE UTILITIES
 // ============================================================================
 
 const STORAGE_KEYS = {
@@ -244,13 +260,13 @@ const STORAGE_KEYS = {
   CURRENT_TESTS: 'oj_current_tests',
   CURRENT_PROBLEM: 'oj_current_problem',
   SETTINGS: 'oj_settings'
-}
+};
 
 function safeJSONParse(str, fallback) {
   try {
-    return str ? JSON.parse(str) : fallback
+    return str ? JSON.parse(str) : fallback;
   } catch {
-    return fallback
+    return fallback;
   }
 }
 
@@ -260,30 +276,26 @@ const Storage = {
   
   getSubmissions: () => safeJSONParse(localStorage.getItem(STORAGE_KEYS.SUBMISSIONS), []),
   saveSubmission: (submission) => {
-    const all = Storage.getSubmissions()
-    all.unshift({ ...submission, id: Date.now(), timestamp: new Date().toISOString() })
-    localStorage.setItem(STORAGE_KEYS.SUBMISSIONS, JSON.stringify(all.slice(0, 100))) // Keep last 100
+    const all = Storage.getSubmissions();
+    all.unshift({ ...submission, id: Date.now(), timestamp: new Date().toISOString() });
+    localStorage.setItem(STORAGE_KEYS.SUBMISSIONS, JSON.stringify(all.slice(0, 100)));
   },
   
-  getCurrentCode: () => localStorage.getItem(STORAGE_KEYS.CURRENT_CODE),
-  saveCurrentCode: (code) => localStorage.setItem(STORAGE_KEYS.CURRENT_CODE, code),
-  
-  getCurrentTests: () => localStorage.getItem(STORAGE_KEYS.CURRENT_TESTS),
-  saveCurrentTests: (tests) => localStorage.setItem(STORAGE_KEYS.CURRENT_TESTS, tests),
+  getCurrentCode: (problemId) => localStorage.getItem(`${STORAGE_KEYS.CURRENT_CODE}:${problemId}`),
+  saveCurrentCode: (problemId, code) => localStorage.setItem(`${STORAGE_KEYS.CURRENT_CODE}:${problemId}`, code),
   
   getCurrentProblem: () => localStorage.getItem(STORAGE_KEYS.CURRENT_PROBLEM),
   saveCurrentProblem: (id) => localStorage.setItem(STORAGE_KEYS.CURRENT_PROBLEM, id),
   
   getSettings: () => safeJSONParse(localStorage.getItem(STORAGE_KEYS.SETTINGS), {
     autoSave: true,
-    showHiddenTests: false,
-    theme: 'light'
+    showHiddenTests: false
   }),
   saveSettings: (settings) => localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings))
-}
+};
 
 // ============================================================================
-// WEB WORKER - Sandboxed execution
+// WEB WORKER - Improved isolation
 // ============================================================================
 
 function createWorkerBlob() {
@@ -295,109 +307,100 @@ function createWorkerBlob() {
       const total = tests.length;
       let userFn = null;
       
+      const clone = (v) => (typeof structuredClone === 'function' ? structuredClone(v) : JSON.parse(JSON.stringify(v)));
+      
       // Compile user code
       try {
-        const wrapped = '(function(){\\n' + code + '\\n;return (typeof solve === "function" ? solve : null);})()'
-        userFn = eval(wrapped)
+        const fn = new Function(\`"use strict"; return (function(){\\n\${code}\\n;return (typeof solve==="function"?solve:null); })();\`);
+        userFn = fn();
       } catch (err) {
         postMessage({ 
           type: 'error', 
           error: 'Compilation Error: ' + (err?.message || String(err)),
           details: err?.stack
-        })
-        return
+        });
+        return;
       }
       
       if (!userFn) {
-        postMessage({ type: 'error', error: 'No solve() function found in your code.' })
-        return
+        postMessage({ type: 'error', error: 'No solve() function found in your code.' });
+        return;
       }
       
       // Run each test case
       for (let i = 0; i < tests.length; i++) {
-        const t = tests[i]
-        let verdict = { index: i, hidden: t.hidden }
+        const t = tests[i];
+        let verdict = { index: i, hidden: t.hidden };
         
         try {
-          const start = performance.now()
+          const start = performance.now();
+          const output = userFn(clone(t.input));
+          const runtimeMs = performance.now() - start;
           
-          // Timeout mechanism
-          let timedOut = false
-          const timeoutId = setTimeout(() => { timedOut = true }, timeLimit || 2000)
-          
-          const output = userFn(structuredClone(t.input))
-          const runtimeMs = performance.now() - start
-          
-          clearTimeout(timeoutId)
-          
-          if (timedOut) {
-            verdict.ok = false
-            verdict.error = 'Time Limit Exceeded'
-            verdict.runtimeMs = runtimeMs
-          } else if (runtimeMs > (timeLimit || 2000)) {
-            verdict.ok = false
-            verdict.error = 'Time Limit Exceeded'
-            verdict.runtimeMs = runtimeMs
+          if (runtimeMs > (timeLimit || 2000)) {
+            verdict.ok = false;
+            verdict.error = 'Time Limit Exceeded';
+            verdict.runtimeMs = runtimeMs;
           } else {
-            verdict.ok = deepEqual(output, t.expected)
-            verdict.runtimeMs = runtimeMs
-            verdict.output = output
-            verdict.expected = t.expected
-            if (verdict.ok) passed++
+            verdict.ok = deepEqual(output, t.expected);
+            verdict.runtimeMs = runtimeMs;
+            verdict.output = output;
+            verdict.expected = t.expected;
+            if (verdict.ok) passed++;
           }
         } catch (err) {
-          verdict.ok = false
-          verdict.error = 'Runtime Error: ' + (err?.message || String(err))
-          verdict.details = err?.stack
+          verdict.ok = false;
+          verdict.error = 'Runtime Error: ' + (err?.message || String(err));
+          verdict.details = err?.stack;
         }
         
-        postMessage({ type: 'case', ...verdict })
+        postMessage({ type: 'case', ...verdict });
       }
       
-      postMessage({ type: 'done', passed, total })
-    }
+      postMessage({ type: 'done', passed, total });
+    };
     
     function deepEqual(a, b) {
-      if (a === b) return true
-      if (typeof a !== typeof b) return false
+      if (a === b) return true;
+      if (typeof a !== typeof b) return false;
       if (a && b && typeof a === 'object') {
-        if (Array.isArray(a) !== Array.isArray(b)) return false
+        if (Array.isArray(a) !== Array.isArray(b)) return false;
         if (Array.isArray(a)) {
-          if (a.length !== b.length) return false
+          if (a.length !== b.length) return false;
           for (let i = 0; i < a.length; i++) {
-            if (!deepEqual(a[i], b[i])) return false
+            if (!deepEqual(a[i], b[i])) return false;
           }
-          return true
+          return true;
         } else {
-          const ka = Object.keys(a).sort()
-          const kb = Object.keys(b).sort()
-          if (ka.length !== kb.length) return false
+          const ka = Object.keys(a).sort();
+          const kb = Object.keys(b).sort();
+          if (ka.length !== kb.length) return false;
           for (let i = 0; i < ka.length; i++) {
-            if (ka[i] !== kb[i]) return false
-            if (!deepEqual(a[ka[i]], b[kb[i]])) return false
+            if (ka[i] !== kb[i]) return false;
+            if (!deepEqual(a[ka[i]], b[kb[i]])) return false;
           }
-          return true
+          return true;
         }
       }
-      return false
+      return false;
     }
-  `], { type: 'text/javascript' })
+  `], { type: 'text/javascript' });
 }
 
 // ============================================================================
-// SYNTAX HIGHLIGHTER - Simple inline highlighting
+// CODE EDITOR
 // ============================================================================
 
 function SimpleCodeEditor({ value, onChange, readOnly = false, placeholder = '' }) {
-  const [lines, setLines] = useState(value.split('\n').length)
+  const [lines, setLines] = useState(value.split('\n').length);
   
   useEffect(() => {
-    setLines(value.split('\n').length)
-  }, [value])
+    setLines(value.split('\n').length);
+  }, [value]);
   
   return (
-    <div className="relative font-mono text-sm border rounded-lg overflow-hidden bg-slate-50">
-      <div className="absolute left-0 top-0 bottom-0 w-12 bg-slate-100 border-r border-slate-200 text-slate-500 text-xs pt-3 text-right pr-2 select-none">
+    <div className="relative font-mono text-sm rounded-lg overflow-hidden bg-gray-900">
+      <div className="absolute left-0 top-0 bottom-0 w-12 bg-gray-800 border-r border-gray-700 text-gray-500 text-xs pt-3 text-right pr-2 select-none">
         {Array.from({ length: lines }, (_, i) => (
           <div key={i} className="leading-6">{i + 1}</div>
         ))}
@@ -408,383 +411,482 @@ function SimpleCodeEditor({ value, onChange, readOnly = false, placeholder = '' 
         readOnly={readOnly}
         placeholder={placeholder}
         spellCheck={false}
-        className="w-full min-h-[400px] p-3 pl-14 bg-transparent resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg"
+        className="w-full min-h-[400px] p-3 pl-14 bg-transparent text-gray-100 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500 rounded-lg"
         style={{ fontFamily: 'ui-monospace, monospace' }}
       />
     </div>
-  )
+  );
 }
+
+// ============================================================================
+// TOAST NOTIFICATIONS
+// ============================================================================
+
+const ToastContainer = ({ toasts, removeToast }) => (
+  <div className="fixed bottom-6 right-6 z-50 space-y-3">
+    <AnimatePresence>
+      {toasts.map(toast => (
+        <motion.div
+          key={toast.id}
+          initial={{ opacity: 0, x: 100 }}
+          animate={{ opacity: 1, x: 0 }}
+          exit={{ opacity: 0, x: 100 }}
+          className={`px-4 py-3 rounded-lg shadow-lg border flex items-center gap-3 min-w-[300px] ${
+            toast.type === 'success' 
+              ? 'bg-emerald-900/90 border-emerald-700 text-emerald-100' 
+              : toast.type === 'error'
+              ? 'bg-red-900/90 border-red-700 text-red-100'
+              : 'bg-blue-900/90 border-blue-700 text-blue-100'
+          }`}
+        >
+          {toast.type === 'success' && <CheckCircle size={20} />}
+          {toast.type === 'error' && <XCircle size={20} />}
+          {toast.type === 'info' && <AlertCircle size={20} />}
+          <span className="flex-1 text-sm">{toast.message}</span>
+        </motion.div>
+      ))}
+    </AnimatePresence>
+  </div>
+);
 
 // ============================================================================
 // MAIN COMPONENT
 // ============================================================================
 
-export default function Playground() {
-  const [selectedProblem, setSelectedProblem] = useState(Storage.getCurrentProblem() || 'two-sum')
-  const [code, setCode] = useState('')
-  const [customTests, setCustomTests] = useState('')
-  const [running, setRunning] = useState(false)
-  const [results, setResults] = useState([])
-  const [summary, setSummary] = useState(null)
-  const [snippets, setSnippets] = useState(Storage.getSnippets())
-  const [snippetName, setSnippetName] = useState('')
-  const [submissions, setSubmissions] = useState(Storage.getSubmissions())
-  const [settings, setSettings] = useState(Storage.getSettings())
-  const [showHints, setShowHints] = useState(false)
-  const [activeTab, setActiveTab] = useState('problem') // problem, submissions, snippets
-  const [isCustomMode, setIsCustomMode] = useState(false)
+export default function OnlineJudgePlayground() {
+  const [selectedProblem, setSelectedProblem] = useState(Storage.getCurrentProblem() || 'two-sum');
+  const [code, setCode] = useState('');
+  const [customTests, setCustomTests] = useState('');
+  const [running, setRunning] = useState(false);
+  const [results, setResults] = useState([]);
+  const [summary, setSummary] = useState(null);
+  const [snippets, setSnippets] = useState(Storage.getSnippets());
+  const [snippetName, setSnippetName] = useState('');
+  const [submissions, setSubmissions] = useState(Storage.getSubmissions());
+  const [settings, setSettings] = useState(Storage.getSettings());
+  const [showHints, setShowHints] = useState(false);
+  const [activeTab, setActiveTab] = useState('problem');
+  const [isCustomMode, setIsCustomMode] = useState(false);
+  const [toasts, setToasts] = useState([]);
   
-  const workerRef = useRef(null)
-  const autoSaveTimer = useRef(null)
+  const workerRef = useRef(null);
+  const workerUrlRef = useRef(null);
+  const autoSaveTimer = useRef(null);
   
-  const problem = PROBLEM_LIBRARY[selectedProblem]
+  const problem = PROBLEM_LIBRARY[selectedProblem];
   
-  // Initialize worker
-  const workerUrl = useMemo(() => URL.createObjectURL(createWorkerBlob()), [])
+  const addToast = useCallback((message, type = 'info') => {
+    const id = Date.now();
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, 3000);
+  }, []);
   
+  // Initialize worker with cleanup
   useEffect(() => {
-    const worker = new Worker(workerUrl)
-    workerRef.current = worker
+    const blob = createWorkerBlob();
+    const url = URL.createObjectURL(blob);
+    workerUrlRef.current = url;
+    const worker = new Worker(url);
+    workerRef.current = worker;
     
     worker.onmessage = (e) => {
-      const msg = e.data
+      const msg = e.data;
       
       if (msg.type === 'error') {
-        setRunning(false)
-        toast.error(msg.error, { autoClose: 5000 })
-        if (msg.details) console.error(msg.details)
+        setRunning(false);
+        addToast(msg.error, 'error');
+        if (msg.details) console.error(msg.details);
       } else if (msg.type === 'case') {
         setResults(prev => {
-          const next = [...prev]
-          next[msg.index] = msg
-          return next
-        })
+          const next = [...prev];
+          next[msg.index] = msg;
+          return next;
+        });
       } else if (msg.type === 'done') {
-        setRunning(false)
-        const resultSummary = { passed: msg.passed, total: msg.total }
-        setSummary(resultSummary)
+        setRunning(false);
+        const resultSummary = { passed: msg.passed, total: msg.total };
+        setSummary(resultSummary);
         
-        // Save submission
         Storage.saveSubmission({
           problemId: selectedProblem,
           code,
           passed: msg.passed,
           total: msg.total,
           verdict: msg.passed === msg.total ? 'Accepted' : 'Wrong Answer'
-        })
-        setSubmissions(Storage.getSubmissions())
+        });
+        setSubmissions(Storage.getSubmissions());
         
         if (msg.passed === msg.total) {
-          toast.success(`✅ All tests passed! (${msg.total}/${msg.total})`, { autoClose: 3000 })
+          addToast(`✅ All tests passed! (${msg.total}/${msg.total})`, 'success');
         } else {
-          toast.warn(`⚠️ ${msg.passed}/${msg.total} tests passed`, { autoClose: 3000 })
+          addToast(`⚠️ ${msg.passed}/${msg.total} tests passed`, 'error');
         }
       }
-    }
+    };
     
     return () => {
-      worker.terminate()
-      workerRef.current = null
-    }
-  }, [workerUrl, selectedProblem, code])
+      worker.terminate();
+      URL.revokeObjectURL(url);
+      workerRef.current = null;
+      workerUrlRef.current = null;
+    };
+  }, [selectedProblem, code, addToast]);
   
-  // Load problem template on selection
+  // Load problem template
   useEffect(() => {
     if (!isCustomMode && problem) {
-      const saved = Storage.getCurrentCode()
-      const savedProblem = Storage.getCurrentProblem()
-      
-      if (savedProblem === selectedProblem && saved) {
-        setCode(saved)
-      } else {
-        setCode(problem.template)
-      }
-      
-      Storage.saveCurrentProblem(selectedProblem)
-      setResults([])
-      setSummary(null)
+      const saved = Storage.getCurrentCode(selectedProblem);
+      setCode(saved || problem.template);
+      Storage.saveCurrentProblem(selectedProblem);
+      setResults([]);
+      setSummary(null);
     }
-  }, [selectedProblem, isCustomMode, problem])
+  }, [selectedProblem, isCustomMode, problem]);
   
-  // Auto-save
+  // Auto-save per problem
   useEffect(() => {
-    if (settings.autoSave && !isCustomMode) {
-      clearTimeout(autoSaveTimer.current)
+    if (settings.autoSave && !isCustomMode && selectedProblem) {
+      clearTimeout(autoSaveTimer.current);
       autoSaveTimer.current = setTimeout(() => {
-        Storage.saveCurrentCode(code)
-      }, 1000)
+        Storage.saveCurrentCode(selectedProblem, code);
+      }, 1000);
     }
-    return () => clearTimeout(autoSaveTimer.current)
-  }, [code, settings.autoSave, isCustomMode])
+    return () => clearTimeout(autoSaveTimer.current);
+  }, [code, settings.autoSave, isCustomMode, selectedProblem]);
   
   // Run tests
   const runTests = useCallback(() => {
-    let tests
+    let tests;
     
     if (isCustomMode) {
       try {
-        const parsed = JSON.parse(customTests)
-        if (!Array.isArray(parsed)) throw new Error('Tests must be an array')
-        tests = parsed.map(t => ({ ...t, hidden: false }))
+        const parsed = JSON.parse(customTests);
+        if (!Array.isArray(parsed)) throw new Error('Tests must be an array');
+        tests = parsed.map(t => ({ ...t, hidden: false }));
       } catch (err) {
-        toast.error('Invalid tests JSON: ' + err.message)
-        return
+        addToast('Invalid tests JSON: ' + err.message, 'error');
+        return;
       }
     } else {
-      tests = settings.showHiddenTests ? problem.tests : problem.tests.filter(t => !t.hidden)
+      tests = settings.showHiddenTests ? problem.tests : problem.tests.filter(t => !t.hidden);
     }
     
     if (tests.length === 0) {
-      toast.error('No tests to run')
-      return
+      addToast('No tests to run', 'error');
+      return;
     }
     
-    setResults(Array(tests.length).fill(null))
-    setSummary(null)
-    setRunning(true)
+    setResults(Array(tests.length).fill(null));
+    setSummary(null);
+    setRunning(true);
     
     workerRef.current?.postMessage({
       code,
       tests,
       timeLimit: problem?.timeLimit || 2000
-    })
-  }, [code, customTests, isCustomMode, problem, settings.showHiddenTests])
+    });
+  }, [code, customTests, isCustomMode, problem, settings.showHiddenTests, addToast]);
   
   // Snippet management
   const saveSnippet = useCallback(() => {
-    const name = snippetName.trim() || `Snippet ${snippets.length + 1}`
+    const name = snippetName.trim() || `Snippet ${snippets.length + 1}`;
     const newSnippet = {
       name,
       code,
       tests: isCustomMode ? customTests : JSON.stringify(problem.tests, null, 2),
       problemId: isCustomMode ? 'custom' : selectedProblem,
       timestamp: new Date().toISOString()
-    }
+    };
     
-    const updated = [newSnippet, ...snippets]
-    setSnippets(updated)
-    Storage.saveSnippets(updated)
-    setSnippetName('')
-    toast.success('Snippet saved!')
-  }, [snippetName, code, customTests, snippets, selectedProblem, isCustomMode, problem])
+    const updated = [newSnippet, ...snippets];
+    setSnippets(updated);
+    Storage.saveSnippets(updated);
+    setSnippetName('');
+    addToast('Snippet saved!', 'success');
+  }, [snippetName, code, customTests, snippets, selectedProblem, isCustomMode, problem, addToast]);
   
   const loadSnippet = useCallback((idx) => {
-    const snippet = snippets[idx]
-    if (!snippet) return
+    const snippet = snippets[idx];
+    if (!snippet) return;
     
-    setCode(snippet.code)
+    setCode(snippet.code);
     if (snippet.problemId === 'custom') {
-      setIsCustomMode(true)
-      setCustomTests(snippet.tests)
+      setIsCustomMode(true);
+      setCustomTests(snippet.tests);
     } else {
-      setIsCustomMode(false)
-      setSelectedProblem(snippet.problemId)
+      setIsCustomMode(false);
+      setSelectedProblem(snippet.problemId);
     }
-    toast.info('Snippet loaded')
-  }, [snippets])
+    addToast('Snippet loaded', 'info');
+  }, [snippets, addToast]);
   
   const deleteSnippet = useCallback((idx) => {
-    const updated = snippets.filter((_, i) => i !== idx)
-    setSnippets(updated)
-    Storage.saveSnippets(updated)
-    toast.info('Snippet deleted')
-  }, [snippets])
+    const updated = snippets.filter((_, i) => i !== idx);
+    setSnippets(updated);
+    Storage.saveSnippets(updated);
+    addToast('Snippet deleted', 'info');
+  }, [snippets, addToast]);
   
-  // Switch to custom mode
   const switchToCustomMode = useCallback(() => {
-    setIsCustomMode(true)
-    setCode(`function solve(input) {\n  // Your code here\n  return input;\n}`)
+    setIsCustomMode(true);
+    setCode(`function solve(input) {\n  // Your code here\n  return input;\n}`);
     setCustomTests(JSON.stringify([
       { input: [], expected: [] }
-    ], null, 2))
-    setResults([])
-    setSummary(null)
-  }, [])
+    ], null, 2));
+    setResults([]);
+    setSummary(null);
+  }, []);
   
-  // Difficulty colors
   const getDifficultyColor = (diff) => {
     const colors = {
-      easy: 'bg-green-100 text-green-700 border-green-300',
-      medium: 'bg-yellow-100 text-yellow-700 border-yellow-300',
-      hard: 'bg-red-100 text-red-700 border-red-300'
-    }
-    return colors[diff] || 'bg-gray-100 text-gray-700'
-  }
+      easy: 'from-green-600 to-emerald-600',
+      medium: 'from-yellow-600 to-orange-600',
+      hard: 'from-red-600 to-pink-600'
+    };
+    return colors[diff] || 'from-gray-600 to-slate-600';
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-purple-50 to-blue-50 px-6 py-10">
-      <ToastContainer position="bottom-right" theme="light" />
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-indigo-950 to-gray-900 text-white">
+      <ToastContainer toasts={toasts} />
       
-      <div className="max-w-7xl mx-auto">
+      <div className="max-w-7xl mx-auto px-6 py-16">
         {/* Header */}
-        <div className="mb-6 flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold mb-2 bg-clip-text text-transparent bg-gradient-to-r from-cyan-500 to-blue-600">
-              Online Judge Playground
-            </h1>
-            <p className="text-sm text-slate-600">Write, test, and debug algorithms in your browser</p>
-          </div>
-          
-          <div className="flex gap-3">
-            <button
-              onClick={() => setSettings(prev => ({ ...prev, showHiddenTests: !prev.showHiddenTests }))}
-              className={`px-4 py-2 rounded-lg text-sm font-medium border-2 transition-all ${
-                settings.showHiddenTests
-                  ? 'bg-purple-100 border-purple-400 text-purple-700'
-                  : 'bg-white border-slate-300 text-slate-700 hover:border-purple-300'
-              }`}
-            >
-              {settings.showHiddenTests ? '🔓 All Tests' : '🔒 Visible Only'}
-            </button>
-            
-            <button
-              onClick={runTests}
-              disabled={running}
-              className="px-6 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-medium hover:from-blue-700 hover:to-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-md active:scale-95 transition-all"
-            >
-              {running ? (
-                <span className="flex items-center gap-2">
-                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  Running...
-                </span>
-              ) : (
-                '▶ Run Tests'
-              )}
-            </button>
-          </div>
-        </div>
+        <motion.div
+          className="text-center mb-12"
+          initial={{ opacity: 0, y: -30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.7 }}
+        >
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-cyan-400 via-blue-500 to-indigo-500 bg-clip-text text-transparent">
+            💻 Online Judge Playground
+          </h1>
+          <p className="text-lg text-indigo-300">
+            Write, test, and debug algorithms in your browser
+          </p>
+        </motion.div>
+
+        {/* Action Bar */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+          className="mb-8 flex flex-wrap gap-3 justify-center"
+        >
+          <motion.button
+            onClick={runTests}
+            disabled={running}
+            whileHover={!running ? { scale: 1.05 } : {}}
+            whileTap={!running ? { scale: 0.95 } : {}}
+            className="flex items-center gap-2 px-8 py-3 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-bold rounded-lg shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+          >
+            {running ? (
+              <>
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                >
+                  <Layers size={20} />
+                </motion.div>
+                Running...
+              </>
+            ) : (
+              <>
+                <Play size={20} />
+                Run Tests
+              </>
+            )}
+          </motion.button>
+
+          <motion.button
+            onClick={() => setSettings(prev => ({ ...prev, showHiddenTests: !prev.showHiddenTests }))}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className={`flex items-center gap-2 px-6 py-3 rounded-lg font-semibold border-2 transition-all ${
+              settings.showHiddenTests
+                ? 'bg-emerald-600 border-emerald-500 text-white'
+                : 'bg-gray-800 border-gray-700 text-gray-300'
+            }`}
+          >
+            {settings.showHiddenTests ? <Eye size={18} /> : <EyeOff size={18} />}
+            {settings.showHiddenTests ? 'All Tests' : 'Visible Only'}
+          </motion.button>
+        </motion.div>
 
         {/* Tab Navigation */}
-        <div className="mb-6 flex gap-2 border-b border-slate-200">
+        <div className="mb-8 flex gap-2 border-b border-gray-700">
           {['problem', 'submissions', 'snippets'].map(tab => (
-            <button
+            <motion.button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 font-medium text-sm border-b-2 transition-colors ${
+              whileHover={{ y: -2 }}
+              className={`px-6 py-3 font-semibold text-sm border-b-2 transition-colors capitalize ${
                 activeTab === tab
-                  ? 'border-blue-600 text-blue-600'
-                  : 'border-transparent text-slate-600 hover:text-slate-800'
+                  ? 'border-cyan-400 text-cyan-400'
+                  : 'border-transparent text-gray-400 hover:text-gray-300'
               }`}
             >
-              {tab.charAt(0).toUpperCase() + tab.slice(1)}
-            </button>
+              {tab}
+            </motion.button>
           ))}
         </div>
 
-        {/* Problem Selection Panel */}
+        {/* Problem Tab */}
         {activeTab === 'problem' && (
           <>
-            <div className="mb-6 p-5 border border-slate-200 rounded-xl bg-white shadow-sm">
+            {/* Problem Selection */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mb-8 bg-gray-800/80 backdrop-blur-sm border border-indigo-700 rounded-xl p-6 shadow-lg"
+            >
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-semibold text-slate-800">Select Problem</h2>
-                <button
+                <h2 className="text-xl font-semibold text-white">Select Problem</h2>
+                <motion.button
                   onClick={switchToCustomMode}
-                  className="px-4 py-2 text-sm border-2 border-blue-300 text-blue-700 rounded-lg hover:bg-blue-50 transition-colors"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-semibold transition-colors"
                 >
                   ➕ Custom Problem
-                </button>
+                </motion.button>
               </div>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                {Object.values(PROBLEM_LIBRARY).map(prob => (
-                  <button
+                {Object.values(PROBLEM_LIBRARY).map((prob, idx) => (
+                  <motion.button
                     key={prob.id}
-                    onClick={() => { setSelectedProblem(prob.id); setIsCustomMode(false) }}
-                    className={`p-3 rounded-lg border-2 text-left transition-all ${
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: idx * 0.05 }}
+                    onClick={() => { setSelectedProblem(prob.id); setIsCustomMode(false); }}
+                    whileHover={{ scale: 1.03, y: -2 }}
+                    whileTap={{ scale: 0.97 }}
+                    className={`p-4 rounded-lg border-2 text-left transition-all ${
                       !isCustomMode && selectedProblem === prob.id
-                        ? 'border-blue-500 bg-blue-50 shadow-md'
-                        : 'border-slate-200 bg-white hover:border-blue-300'
+                        ? 'border-cyan-500 bg-cyan-900/30 shadow-lg'
+                        : 'border-gray-700 bg-gray-900/50 hover:border-indigo-600'
                     }`}
                   >
-                    <h3 className="font-semibold text-sm text-slate-800 mb-1">{prob.title}</h3>
+                    <h3 className="font-semibold text-sm text-white mb-2">{prob.title}</h3>
                     <div className="flex items-center gap-2 mb-2">
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium border ${getDifficultyColor(prob.difficulty)}`}>
+                      <span className={`px-2 py-1 rounded-lg text-xs font-semibold bg-gradient-to-r ${getDifficultyColor(prob.difficulty)} text-white`}>
                         {prob.difficulty}
                       </span>
-                      <span className="text-xs text-slate-500">{prob.tests.length} tests</span>
+                      <span className="text-xs text-gray-400">{prob.tests.length} tests</span>
                     </div>
                     <div className="flex flex-wrap gap-1">
                       {prob.tags.slice(0, 2).map(tag => (
-                        <span key={tag} className="text-xs px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded">
+                        <span key={tag} className="text-xs px-2 py-0.5 bg-gray-700 text-gray-300 rounded">
                           {tag}
                         </span>
                       ))}
                     </div>
-                  </button>
+                  </motion.button>
                 ))}
               </div>
-            </div>
+            </motion.div>
 
             {/* Problem Description */}
             {!isCustomMode && problem && (
-              <div className="mb-6 p-5 border border-slate-200 rounded-xl bg-white shadow-sm">
-                <div className="flex items-start justify-between mb-3">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.1 }}
+                className="mb-8 bg-gray-800/80 backdrop-blur-sm border border-indigo-700 rounded-xl p-6 shadow-lg"
+              >
+                <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h2 className="text-xl font-bold text-slate-800 mb-1">{problem.title}</h2>
-                    <div className="flex items-center gap-2">
-                      <span className={`px-2 py-1 rounded-lg text-xs font-medium border ${getDifficultyColor(problem.difficulty)}`}>
+                    <h2 className="text-2xl font-bold text-white mb-2">{problem.title}</h2>
+                    <div className="flex items-center gap-3">
+                      <span className={`px-3 py-1 rounded-lg text-sm font-semibold bg-gradient-to-r ${getDifficultyColor(problem.difficulty)} text-white`}>
                         {problem.difficulty}
                       </span>
-                      <span className="text-xs text-slate-500">Time Limit: {problem.timeLimit}ms</span>
+                      <span className="text-sm text-gray-400 flex items-center gap-1">
+                        <Clock size={14} />
+                        {problem.timeLimit}ms
+                      </span>
                     </div>
                   </div>
-                  <button
+                  <motion.button
                     onClick={() => setShowHints(!showHints)}
-                    className="px-3 py-1.5 text-sm border border-amber-300 text-amber-700 rounded-lg hover:bg-amber-50 transition-colors"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white rounded-lg font-semibold transition-colors"
                   >
+                    <Lightbulb size={16} />
                     {showHints ? 'Hide' : 'Show'} Hints
-                  </button>
+                  </motion.button>
                 </div>
                 
-                <p className="text-sm text-slate-700 mb-3">{problem.description}</p>
-                <code className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-800">
+                <p className="text-gray-300 mb-4">{problem.description}</p>
+                <code className="text-sm bg-gray-900 px-3 py-2 rounded text-cyan-400 block">
                   {problem.signature}
                 </code>
                 
-                {showHints && (
-                  <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                    <h4 className="text-sm font-semibold text-amber-900 mb-2">💡 Hints:</h4>
-                    <ul className="text-sm text-amber-800 space-y-1 list-disc list-inside">
-                      {problem.hints.map((hint, idx) => (
-                        <li key={idx}>{hint}</li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
+                <AnimatePresence>
+                  {showHints && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      className="mt-4 p-4 bg-amber-900/30 border border-amber-700 rounded-lg overflow-hidden"
+                    >
+                      <h4 className="text-sm font-semibold text-amber-300 mb-2 flex items-center gap-2">
+                        <Lightbulb size={16} />
+                        Hints:
+                      </h4>
+                      <ul className="text-sm text-amber-200 space-y-1 list-disc list-inside">
+                        {problem.hints.map((hint, idx) => (
+                          <li key={idx}>{hint}</li>
+                        ))}
+                      </ul>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
                 
-                <div className="mt-4 flex flex-wrap gap-1">
+                <div className="mt-4 flex flex-wrap gap-2">
                   {problem.tags.map(tag => (
-                    <span key={tag} className="text-xs px-2 py-1 bg-blue-100 text-blue-700 rounded-full">
+                    <span key={tag} className="text-xs px-3 py-1 bg-indigo-600/30 text-indigo-300 rounded-full border border-indigo-600/50">
                       #{tag}
                     </span>
                   ))}
                 </div>
-              </div>
+              </motion.div>
             )}
 
             {/* Code Editor & Tests Grid */}
-            <div className="grid lg:grid-cols-2 gap-6 mb-6">
+            <div className="grid lg:grid-cols-2 gap-6 mb-8">
               {/* Code Editor */}
-              <div className="p-5 border border-slate-200 rounded-xl bg-white shadow-sm">
-                <div className="flex items-center justify-between mb-3">
-                  <h3 className="font-semibold text-slate-800">Solution Code</h3>
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+                className="bg-gray-800/80 backdrop-blur-sm border border-indigo-700 rounded-xl p-6 shadow-lg"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="font-semibold text-white flex items-center gap-2">
+                    <Code size={18} />
+                    Solution Code
+                  </h3>
                   <div className="flex gap-2">
                     <input
                       type="text"
                       value={snippetName}
                       onChange={(e) => setSnippetName(e.target.value)}
                       placeholder="Snippet name..."
-                      className="px-3 py-1 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="px-3 py-1.5 text-sm bg-gray-900 border border-gray-700 text-white rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
-                    <button
+                    <motion.button
                       onClick={saveSnippet}
-                      className="px-3 py-1.5 text-xs bg-slate-200 hover:bg-slate-300 rounded-lg transition-colors"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="px-3 py-1.5 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors flex items-center gap-1"
                     >
-                      💾 Save
-                    </button>
+                      <Save size={14} />
+                    </motion.button>
                   </div>
                 </div>
                 <SimpleCodeEditor
@@ -792,11 +894,17 @@ export default function Playground() {
                   onChange={setCode}
                   placeholder="Write your solve() function here..."
                 />
-              </div>
+              </motion.div>
 
               {/* Tests Panel */}
-              <div className="p-5 border border-slate-200 rounded-xl bg-white shadow-sm">
-                <h3 className="font-semibold text-slate-800 mb-3">
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3 }}
+                className="bg-gray-800/80 backdrop-blur-sm border border-indigo-700 rounded-xl p-6 shadow-lg"
+              >
+                <h3 className="font-semibold text-white mb-4 flex items-center gap-2">
+                  <FileCode size={18} />
                   {isCustomMode ? 'Custom Tests (JSON)' : 'Test Cases'}
                 </h3>
                 
@@ -813,31 +921,31 @@ export default function Playground() {
                         key={idx}
                         className={`p-3 rounded-lg border ${
                           test.hidden && !settings.showHiddenTests
-                            ? 'bg-slate-100 border-slate-300 opacity-50'
-                            : 'bg-slate-50 border-slate-200'
+                            ? 'bg-gray-900/50 border-gray-700 opacity-50'
+                            : 'bg-gray-900/70 border-gray-700'
                         }`}
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-xs font-semibold text-slate-700">
+                          <span className="text-xs font-semibold text-gray-300">
                             Test #{idx + 1}
                           </span>
                           {test.hidden && (
-                            <span className="text-xs px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full">
+                            <span className="text-xs px-2 py-0.5 bg-yellow-600/30 text-yellow-300 rounded-full border border-yellow-600/50">
                               Hidden
                             </span>
                           )}
                         </div>
                         {(!test.hidden || settings.showHiddenTests) && (
                           <>
-                            <div className="text-xs text-slate-600 mb-1">
-                              <strong>Input:</strong>{' '}
-                              <code className="bg-white px-1 py-0.5 rounded">
+                            <div className="text-xs text-gray-400 mb-1">
+                              <strong className="text-gray-300">Input:</strong>{' '}
+                              <code className="bg-gray-800 px-2 py-0.5 rounded text-cyan-400">
                                 {JSON.stringify(test.input)}
                               </code>
                             </div>
-                            <div className="text-xs text-slate-600">
-                              <strong>Expected:</strong>{' '}
-                              <code className="bg-white px-1 py-0.5 rounded">
+                            <div className="text-xs text-gray-400">
+                              <strong className="text-gray-300">Expected:</strong>{' '}
+                              <code className="bg-gray-800 px-2 py-0.5 rounded text-emerald-400">
                                 {JSON.stringify(test.expected)}
                               </code>
                             </div>
@@ -847,18 +955,23 @@ export default function Playground() {
                     ))}
                   </div>
                 )}
-              </div>
+              </motion.div>
             </div>
 
             {/* Results Panel */}
-            <div className="p-5 border border-slate-200 rounded-xl bg-white shadow-sm">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="bg-gray-800/80 backdrop-blur-sm border border-indigo-700 rounded-xl p-6 shadow-lg"
+            >
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-slate-800">Test Results</h3>
+                <h3 className="font-semibold text-white">Test Results</h3>
                 {summary && (
-                  <div className={`px-3 py-1.5 rounded-lg font-semibold ${
+                  <div className={`px-4 py-2 rounded-lg font-bold ${
                     summary.passed === summary.total
-                      ? 'bg-green-100 text-green-700'
-                      : 'bg-amber-100 text-amber-700'
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-amber-600 text-white'
                   }`}>
                     {summary.passed}/{summary.total} Passed
                   </div>
@@ -866,10 +979,8 @@ export default function Playground() {
               </div>
               
               {results.length === 0 ? (
-                <div className="py-10 text-center text-slate-500">
-                  <svg className="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                  </svg>
+                <div className="py-16 text-center text-gray-500">
+                  <FileCode size={48} className="mx-auto mb-4 opacity-50" />
                   <p className="text-sm">Click "Run Tests" to execute your code</p>
                 </div>
               ) : (
@@ -877,36 +988,40 @@ export default function Playground() {
                   {results.map((r, idx) => {
                     if (!r) {
                       return (
-                        <div key={idx} className="p-4 rounded-lg border border-slate-200 bg-slate-50 animate-pulse">
-                          <div className="h-4 bg-slate-200 rounded w-1/3 mb-2" />
-                          <div className="h-3 bg-slate-200 rounded w-2/3" />
+                        <div key={idx} className="p-4 rounded-lg border border-gray-700 bg-gray-900/50 animate-pulse">
+                          <div className="h-4 bg-gray-700 rounded w-1/3 mb-2" />
+                          <div className="h-3 bg-gray-700 rounded w-2/3" />
                         </div>
-                      )
+                      );
                     }
                     
                     return (
-                      <div
+                      <motion.div
                         key={idx}
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: idx * 0.05 }}
                         className={`p-4 rounded-lg border-2 ${
                           r.ok
-                            ? 'border-green-400 bg-green-50'
-                            : 'border-red-400 bg-red-50'
+                            ? 'border-emerald-500 bg-emerald-900/20'
+                            : 'border-red-500 bg-red-900/20'
                         }`}
                       >
                         <div className="flex items-center justify-between mb-2">
-                          <div className="flex items-center gap-2">
-                            <span className={`w-2 h-2 rounded-full ${r.ok ? 'bg-green-500' : 'bg-red-500'}`} />
-                            <span className="font-semibold text-sm">
+                          <div className="flex items-center gap-3">
+                            {r.ok ? <CheckCircle size={20} className="text-emerald-400" /> : <XCircle size={20} className="text-red-400" />}
+                            <span className="font-semibold">
                               Test #{idx + 1} — {r.ok ? '✅ Passed' : '❌ Failed'}
                             </span>
                             {r.hidden && (
-                              <span className="text-xs px-2 py-0.5 bg-yellow-100 text-yellow-700 rounded-full">
+                              <span className="text-xs px-2 py-0.5 bg-yellow-600/30 text-yellow-300 rounded-full">
                                 Hidden
                               </span>
                             )}
                           </div>
                           {typeof r.runtimeMs === 'number' && (
-                            <span className="text-xs text-slate-600">
+                            <span className="text-xs text-gray-400 flex items-center gap-1">
+                              <Clock size={12} />
                               {r.runtimeMs.toFixed(2)} ms
                             </span>
                           )}
@@ -915,148 +1030,181 @@ export default function Playground() {
                         {!r.ok && (
                           <div className="mt-2 space-y-1 text-xs">
                             {r.error ? (
-                              <div className="p-2 bg-red-100 border border-red-200 rounded">
-                                <strong className="text-red-800">Error:</strong>
-                                <code className="block mt-1 text-red-700">{r.error}</code>
+                              <div className="p-2 bg-red-900/30 border border-red-700 rounded">
+                                <strong className="text-red-400">Error:</strong>
+                                <code className="block mt-1 text-red-300 font-mono">{r.error}</code>
                               </div>
                             ) : (
-                              <>
+                              <div className="grid gap-2">
                                 <div>
-                                  <strong>Expected:</strong>{' '}
-                                  <code className="bg-white px-1 py-0.5 rounded">{JSON.stringify(r.expected)}</code>
+                                  <strong className="text-gray-300">Expected:</strong>{' '}
+                                  <code className="bg-gray-800 px-2 py-1 rounded text-emerald-400 font-mono">
+                                    {JSON.stringify(r.expected)}
+                                  </code>
                                 </div>
                                 <div>
-                                  <strong>Got:</strong>{' '}
-                                  <code className="bg-white px-1 py-0.5 rounded">{JSON.stringify(r.output)}</code>
+                                  <strong className="text-gray-300">Got:</strong>{' '}
+                                  <code className="bg-gray-800 px-2 py-1 rounded text-red-400 font-mono">
+                                    {JSON.stringify(r.output)}
+                                  </code>
                                 </div>
-                              </>
+                              </div>
                             )}
                           </div>
                         )}
-                      </div>
-                    )
+                      </motion.div>
+                    );
                   })}
                 </div>
               )}
-            </div>
+            </motion.div>
           </>
         )}
 
         {/* Submissions Tab */}
         {activeTab === 'submissions' && (
-          <div className="p-5 border border-slate-200 rounded-xl bg-white shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-800 mb-4">Submission History</h2>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-gray-800/80 backdrop-blur-sm border border-indigo-700 rounded-xl p-6 shadow-lg"
+          >
+            <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+              <FolderOpen size={20} />
+              Submission History
+            </h2>
             
             {submissions.length === 0 ? (
-              <div className="py-10 text-center text-slate-500">
-                <svg className="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
+              <div className="py-16 text-center text-gray-500">
+                <FolderOpen size={48} className="mx-auto mb-4 opacity-50" />
                 <p className="text-sm">No submissions yet</p>
               </div>
             ) : (
               <div className="space-y-3 max-h-[600px] overflow-y-auto">
                 {submissions.map((sub) => {
-                  const prob = PROBLEM_LIBRARY[sub.problemId]
+                  const prob = PROBLEM_LIBRARY[sub.problemId];
                   return (
-                    <div key={sub.id} className="p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                    <motion.div
+                      key={sub.id}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      whileHover={{ x: 4 }}
+                      className="p-4 border border-gray-700 bg-gray-900/50 rounded-lg hover:bg-gray-900/70 transition-all cursor-pointer"
+                    >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-semibold text-sm text-slate-800">
+                            <h3 className="font-semibold text-white">
                               {prob?.title || sub.problemId}
                             </h3>
-                            <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                            <span className={`px-2 py-1 rounded-lg text-xs font-semibold ${
                               sub.verdict === 'Accepted'
-                                ? 'bg-green-100 text-green-700'
-                                : 'bg-red-100 text-red-700'
+                                ? 'bg-emerald-600 text-white'
+                                : 'bg-red-600 text-white'
                             }`}>
                               {sub.verdict}
                             </span>
                           </div>
-                          <div className="flex items-center gap-3 text-xs text-slate-600">
+                          <div className="flex items-center gap-3 text-xs text-gray-400">
                             <span>{sub.passed}/{sub.total} tests passed</span>
                             <span>{new Date(sub.timestamp).toLocaleString()}</span>
                           </div>
                         </div>
-                        <button
+                        <motion.button
                           onClick={() => {
-                            setCode(sub.code)
-                            setSelectedProblem(sub.problemId)
-                            setIsCustomMode(false)
-                            setActiveTab('problem')
-                            toast.info('Submission loaded')
+                            setCode(sub.code);
+                            setSelectedProblem(sub.problemId);
+                            setIsCustomMode(false);
+                            setActiveTab('problem');
+                            addToast('Submission loaded', 'info');
                           }}
-                          className="px-3 py-1.5 text-xs bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors"
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-semibold transition-colors flex items-center gap-2"
                         >
+                          <Download size={14} />
                           Load
-                        </button>
+                        </motion.button>
                       </div>
-                    </div>
-                  )
+                    </motion.div>
+                  );
                 })}
               </div>
             )}
-          </div>
+          </motion.div>
         )}
 
         {/* Snippets Tab */}
         {activeTab === 'snippets' && (
-          <div className="p-5 border border-slate-200 rounded-xl bg-white shadow-sm">
-            <h2 className="text-lg font-semibold text-slate-800 mb-4">Saved Snippets</h2>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-gray-800/80 backdrop-blur-sm border border-indigo-700 rounded-xl p-6 shadow-lg"
+          >
+            <h2 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+              <Layers size={20} />
+              Saved Snippets
+            </h2>
             
             {snippets.length === 0 ? (
-              <div className="py-10 text-center text-slate-500">
-                <svg className="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V
-8M7 18h10" />
-                </svg>
+              <div className="py-16 text-center text-gray-500">
+                <Layers size={48} className="mx-auto mb-4 opacity-50" />
                 <p className="text-sm">No saved snippets yet</p>
               </div>
             ) : (
               <div className="space-y-3 max-h-[600px] overflow-y-auto">
                 {snippets.map((snippet, idx) => {
-                  const prob = PROBLEM_LIBRARY[snippet.problemId]
+                  const prob = PROBLEM_LIBRARY[snippet.problemId];
                   return (
-                    <div key={idx} className="p-4 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors">
+                    <motion.div
+                      key={idx}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: idx * 0.05 }}
+                      whileHover={{ x: 4 }}
+                      className="p-4 border border-gray-700 bg-gray-900/50 rounded-lg hover:bg-gray-900/70 transition-all"
+                    >
                       <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h3 className="font-semibold text-sm text-slate-800 mb-1">
-                            {snippet.name}
-                          </h3>
-                          <div className="flex items-center gap-3 text-xs text-slate-600 mb-2">
+                          <h3 className="font-semibold text-white mb-1">{snippet.name}</h3>
+                          <div className="flex items-center gap-3 text-xs text-gray-400 mb-2">
                             <span>
                               {snippet.problemId === 'custom' ? '🔧 Custom' : prob?.title || snippet.problemId}
                             </span>
                             <span>{new Date(snippet.timestamp).toLocaleString()}</span>
                           </div>
-                          <pre className="text-xs bg-slate-100 p-2 rounded overflow-x-auto max-h-20 text-slate-700">
+                          <pre className="text-xs bg-gray-800 p-2 rounded overflow-x-auto max-h-20 text-gray-300 font-mono">
                             {snippet.code.slice(0, 150)}...
                           </pre>
                         </div>
                         <div className="flex flex-col gap-2 ml-3">
-                          <button
+                          <motion.button
                             onClick={() => loadSnippet(idx)}
-                            className="px-3 py-1.5 text-xs bg-blue-100 text-blue-700 rounded-lg hover:bg-blue-200 transition-colors whitespace-nowrap"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg font-semibold transition-colors whitespace-nowrap flex items-center gap-2"
                           >
+                            <Download size={14} />
                             Load
-                          </button>
-                          <button
+                          </motion.button>
+                          <motion.button
                             onClick={() => deleteSnippet(idx)}
-                            className="px-3 py-1.5 text-xs bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-colors"
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className="px-4 py-2 bg-red-600 hover:bg-red-500 text-white rounded-lg font-semibold transition-colors flex items-center gap-2"
                           >
+                            <Trash2 size={14} />
                             Delete
-                          </button>
+                          </motion.button>
                         </div>
                       </div>
-                    </div>
-                  )
+                    </motion.div>
+                  );
                 })}
               </div>
             )}
-          </div>
+          </motion.div>
         )}
       </div>
     </div>
-  )
+  );
 }
